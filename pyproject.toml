@@ -21,12 +21,9 @@ dependencies = [
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/cibot"]
+sources = ["fdsaf"]
 
-artifacts = [
-  "*.jinja.*",
-  "*.jinja"
-]
+
 
 
 [project.scripts]
