@@ -117,6 +117,15 @@ class PluginRunner:
         for plugin in self.plugins:
             plugin.on_pr_changed(pr)
 
+    def comment_on_pr(self, pr: int):
+        plugin_comments = {
+            plugin.plugin_name(): plugin.provide_comment_for_pr()
+            for plugin in self.plugins
+        }
+        content = ""
+        for plugin_name, comment in plugin_comments.items():
+            content += f"### {plugin_name}\n{comment}\n"
+        self.backend.create_pr_comment(content)
     def on_commit_to_main(self):
         for plugin in self.plugins:
             plugin.on_commit_to_main(self.backend.get_current_commit_hash())
@@ -132,6 +141,7 @@ def get_runner() -> PluginRunner:
 def on_pr_changed(pr: int):
     runner = get_runner()
     runner.on_pr_changed(pr)
+
 
 
 @app.command()
