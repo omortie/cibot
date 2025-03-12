@@ -22,7 +22,10 @@ allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/cibot"]
-
+[tool.hatch.build.targets.sdist]
+include = [
+  "*.jinja*",
+]
 [project.scripts]
 cibot = "cibot.cli:main"
 
