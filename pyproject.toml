@@ -18,9 +18,8 @@ dependencies = [
 
 
 
-[tool.hatch.build.targets.wheel]
-sources = ["fdsaf"]
-
+[tool.hatch.build.targets.sdist]
+only-include = ["pkg", "tests/unit"]
 
 
 
