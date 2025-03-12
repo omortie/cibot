@@ -27,7 +27,7 @@ BOT_COMMENT_TEMPLATE = template_env.get_template("bot_comment.jinja.md")
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(cli_prefix="CIBOT")
+    model_config = SettingsConfigDict(env_prefix="CIBOT")
 
     BACKEND: str = "github"
     STORAGE: str = "github_issue"
@@ -35,7 +35,7 @@ class Settings(BaseSettings):
 
 
 class GithubSettings(BaseSettings):
-    model_config = SettingsConfigDict(cli_prefix="CIBOT_GITHUB")
+    model_config = SettingsConfigDict(env_prefix="CIBOT_GITHUB")
     TOKEN: str | None = None
     STORAGE_ISSUE_NUMBER: int | None = None
     REPO_SLUG: str | None = None
@@ -126,6 +126,7 @@ class PluginRunner:
         for plugin_name, comment in plugin_comments.items():
             content += f"### {plugin_name}\n{comment}\n"
         self.backend.create_pr_comment(content)
+
     def on_commit_to_main(self):
         for plugin in self.plugins:
             plugin.on_commit_to_main(self.backend.get_current_commit_hash())
@@ -141,7 +142,6 @@ def get_runner() -> PluginRunner:
 def on_pr_changed(pr: int):
     runner = get_runner()
     runner.on_pr_changed(pr)
-
 
 
 @app.command()
