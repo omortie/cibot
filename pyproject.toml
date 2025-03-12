@@ -24,7 +24,7 @@ allow-direct-references = true
 packages = ["src/cibot"]
 
 [project.scripts]
-demo-app = "cibot.cli:main"
+cibot = "cibot.cli:main"
 
 [tool.pyright]
 include = ["src"]
