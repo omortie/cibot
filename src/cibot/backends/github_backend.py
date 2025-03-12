@@ -74,3 +74,4 @@ class GithubBackend(CiBotBackendBase):
                 return
         # If no comment was found, create a new one
         pr.create_issue_comment(content)
+
