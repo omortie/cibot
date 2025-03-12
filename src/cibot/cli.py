@@ -75,7 +75,8 @@ def get_storage() -> BaseStorage:
 
 
 def get_backend() -> CiBotBackendBase:
-    backend_name = os.environ.get("BACKEND")
+    settings = Settings()
+    backend_name = settings.BACKEND
     if not backend_name:
         raise ValueError("BACKEND environment variable is not set")
     match backend_name:
