@@ -1,6 +1,8 @@
 import os
 from typing import ClassVar, override
+import github.PullRequest
 from github.Repository import Repository
+import github
 
 
 from cibot.backends.base import CiBotBackendBase, PRContributor, PrDescription
@@ -38,20 +40,23 @@ class GithubBackend(CiBotBackendBase):
     @override
     def get_pr_description(self, pr_number):
         pr = self.repo.get_pull(pr_number)
+        return self._pr_desc_from_pr(pr)
+    
+    def _pr_desc_from_pr(self, pr: github.PullRequest.PullRequest) -> PrDescription:
         return PrDescription(
             contributor=PRContributor(
-                pr_number=pr_number,
+                pr_number=pr.number,
                 pr_author_username=pr.user.login,
                 pr_author_fullname=pr.user.name,
             ),
             header=pr.title,
             description=pr.body,
-            pr_number=pr_number,
+            pr_number=pr.number,
         )
 
     @override
-    def get_commit_associated_pr(self, commit_hash):
-        return self.repo.get_commit(commit_hash).get_pulls()[0]
+    def get_commit_associated_pr(self, commit_hash) -> PrDescription:
+        return self._pr_desc_from_pr(self.repo.get_commit(commit_hash).get_pulls()[0])
 
     @override
     def get_pr_labels(self, pr_number):
