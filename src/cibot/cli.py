@@ -151,8 +151,8 @@ def on_pr_changed(pr: int, plugin: Annotated[list[str], typer.Option()]  ):
 
 
 @app.command()
-def on_commit_to_main(plugins: list[str] = EMPTY_LIST):
-    runner = get_runner(plugins)
+def on_commit_to_main(plugin: Annotated[list[str], typer.Option()]):
+    runner = get_runner(plugin)
     runner.on_commit_to_main()
 
 
