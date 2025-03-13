@@ -11,14 +11,14 @@ class Settings(BaseSettings):
         "env_prefix": "CIBOT_STORAGE_GH_ISSUE_",
     }
     number: int | None = None
-    
-    
+
+
 class GithubIssueStorage(BaseStorage):
     def __init__(self, repo: Repository) -> None:
         settings = Settings()
         if not settings.number:
             raise ValueError("missing STORAGE_ISSUE_NUMBER")
-        self.comment = repo.get_issue(settings.number).get_comments().get_page(0)[0]
+        self.comment = repo.get_issue(settings.number).get_comments().get_page(1)[0]
 
     def get_json_part_from_comment(self) -> dict[str, bytes] | None:
         body = self.comment.body
