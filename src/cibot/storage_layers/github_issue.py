@@ -1,3 +1,4 @@
+import contextlib
 import json
 
 from loguru import logger
@@ -25,10 +26,8 @@ class GithubIssueStorage(BaseStorage):
 
     def get_json_part_from_comment(self) -> dict[str, bytes] | None:
         body = self.issue.body
-        try:
+        with contextlib.suppress(Exception):
             return json.loads(body.split("```json")[1].split("```")[0].strip())
-        except IndexError:
-            return None
 
     def get[T](self, key: str, type_: type[T]) -> T:
         raw = self.get_json_part_from_comment()
