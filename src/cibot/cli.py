@@ -27,7 +27,9 @@ BOT_COMMENT_TEMPLATE = template_env.get_template("bot_comment.jinja.md")
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="CIBOT")
+    model_config = {
+        "env_prefix": "CIBOT_",
+    }
 
     BACKEND: str = "github"
     STORAGE: str = "github_issue"
@@ -35,7 +37,9 @@ class Settings(BaseSettings):
 
 
 class GithubSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="CIBOT_GITHUB")
+    model_config = {
+        "env_prefix": "CIBOT_GITHUB_",
+    }
     TOKEN: str | None = None
     STORAGE_ISSUE_NUMBER: int | None = None
     REPO_SLUG: str | None = None
