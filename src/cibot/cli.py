@@ -24,7 +24,6 @@ template_env = jinja2.Environment(
     autoescape=jinja2.select_autoescape(),
 )
 
-BOT_COMMENT_TEMPLATE = template_env.get_template("bot_comment.jinja.md")
 
 
 class Settings(BaseSettings):
