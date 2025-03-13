@@ -1,11 +1,12 @@
 from functools import cache
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Annotated
 import jinja2
 from loguru import logger
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typer import Typer
+import typer
 
 from cibot.backends.base import CiBotBackendBase
 from cibot.plugins.base import CiBotPlugin
@@ -33,7 +34,6 @@ class Settings(BaseSettings):
 
     BACKEND: str = "github"
     STORAGE: str = "github_issue"
-    PLUGINS: list[str] = []
 
 
 class GithubSettings(BaseSettings):
@@ -89,10 +89,11 @@ PLUGINS_REGISTRY = {
 }
 
 
-def get_plugins(backend: CiBotBackendBase, storage: BaseStorage) -> list[CiBotPlugin]:
-    settings = Settings()
+def get_plugins(
+    plugins: list[str], backend: CiBotBackendBase, storage: BaseStorage
+) -> list[CiBotPlugin]:
     out = []
-    for name in settings.PLUGINS:
+    for name in plugins:
         logger.info(f"Loading plugin {name}")
         out.append(PLUGINS_REGISTRY[name](backend, storage))
         if name not in PLUGINS_REGISTRY:
@@ -101,10 +102,15 @@ def get_plugins(backend: CiBotBackendBase, storage: BaseStorage) -> list[CiBotPl
 
 
 class PluginRunner:
-    def __init__(self, backend: CiBotBackendBase, storage: BaseStorage) -> None:
+    def __init__(
+        self,
+        plugins: list[CiBotPlugin],
+        backend: CiBotBackendBase,
+        storage: BaseStorage,
+    ) -> None:
         self.backend = backend
         self.storage = storage
-        self.plugins = get_plugins(backend, storage)
+        self.plugins = plugins
         self.backend.configure_git("cibot", "cibot@no.reply")
 
     def on_pr_changed(self, pr: int):
@@ -126,21 +132,22 @@ class PluginRunner:
             plugin.on_commit_to_main(self.backend.get_current_commit_hash())
 
 
-def get_runner() -> PluginRunner:
+def get_runner(plugins: list[str]) -> PluginRunner:
     backend = get_backend()
     storage = get_storage()
-    return PluginRunner(backend, storage)
+    return PluginRunner(get_plugins(plugins, backend, storage), backend, storage)
 
+EMPTY_LIST = []
 
 @app.command()
-def on_pr_changed(pr: int):
-    runner = get_runner()
+def on_pr_changed(pr: int, plugin: Annotated[list[str], typer.Option()]  ):
+    runner = get_runner(plugin)
     runner.on_pr_changed(pr)
 
 
 @app.command()
-def on_commit_to_main():
-    runner = get_runner()
+def on_commit_to_main(plugins: list[str] = EMPTY_LIST):
+    runner = get_runner(plugins)
     runner.on_commit_to_main()
 
 
