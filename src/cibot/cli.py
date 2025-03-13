@@ -116,8 +116,9 @@ class PluginRunner:
     def on_pr_changed(self, pr: int):
         for plugin in self.plugins:
             plugin.on_pr_changed(pr)
+        self.comment_on_pr(pr)
 
-    def comment_on_pr(self, pr: int):
+    def comment_on_pr(self, pr: int):  # sourcery skip: use-join
         plugin_comments = {
             plugin.plugin_name(): plugin.provide_comment_for_pr()
             for plugin in self.plugins
