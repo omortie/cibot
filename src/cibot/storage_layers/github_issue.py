@@ -14,7 +14,10 @@ class Settings(BaseSettings):
     }
     number: int | None = None
     
-    
+class Bucket(msgspec.Struct):
+    plugin_srorage: dict[str, bytes]
+
+
 class GithubIssueStorage(BaseStorage):
     def __init__(self, repo: Repository) -> None:
         settings = Settings()
@@ -24,14 +27,14 @@ class GithubIssueStorage(BaseStorage):
         logger.info(f"Found issue {issue.title}")    
         self.issue = issue
 
-    def get_json_part_from_comment(self) -> dict[str, bytes] | None:
+    def get_json_part_from_comment(self) -> Bucket | None:
         body = self.issue.body
         with contextlib.suppress(Exception):
-            return json.loads(body.split("```json")[1].split("```")[0].strip())
+            return msgspec.json.decode(body.split("```json")[1].split("```")[0].strip(), type=Bucket)
 
     def get[T](self, key: str, type_: type[T]) -> T | None:
-        if raw := self.get_json_part_from_comment():
-            return msgspec.json.decode(raw[key], type=type_)
+        if bucket := self.get_json_part_from_comment():
+            return msgspec.json.decode(bucket.plugin_srorage[key], type=type_)
         return None
 
 
@@ -44,9 +47,9 @@ class GithubIssueStorage(BaseStorage):
         {}
         ```
         """
-        if exists := self.get_json_part_from_comment():
-            exists[key] = raw
-            new_comment = comment_base.format(json.dumps(exists))
+        if bucket := self.get_json_part_from_comment():
+            bucket.plugin_srorage[key] = raw
+            new_comment = comment_base.format(msgspec.json.encode(bucket))
         else:
-            new_comment = comment_base.format(json.dumps({key: raw}))
+            new_comment = comment_base.format(msgspec.json.encode(Bucket(plugin_srorage={key: raw})))
         self.issue.edit(body=new_comment)
