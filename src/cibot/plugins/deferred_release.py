@@ -112,7 +112,7 @@ class DeferredReleasePlugin(CiBotPlugin):
         change_type = None
         for label in labels:
             for change_type in ChangeType:
-                if change_type.value in label:
+                if change_type.value.lower() == label.lower():
                     change_type = change_type
         if change_type is None:
             raise ValueError("No change type found in PR labels")
