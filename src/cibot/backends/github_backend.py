@@ -22,13 +22,14 @@ class GithubBackend(CiBotBackendBase):
 
     @override
     def create_pr_comment(self, content: str) -> None:
-        if self.pr_number:
-            self._create_or_update_bot_comment(
-                self.pr_number,
-                content,
-                self.BOT_COMMENT_ID,
-            )
-        raise ValueError("pr_number is not set")
+        if not self.pr_number:
+            raise ValueError("pr_number is not set")
+
+        self._create_or_update_bot_comment(
+            self.pr_number,
+            content,
+            self.BOT_COMMENT_ID,
+        )
 
     @override
     def publish_release(self, project_name, version):
@@ -63,12 +64,12 @@ class GithubBackend(CiBotBackendBase):
         identifier: str,
     ) -> None:
         pr = self.repo.get_pull(pr_number)
-        comments = list(pr.get_issue_comments())
 
-        for comment in reversed(comments):
+        for comment in pr.get_issue_comments():
             if identifier in comment.body:
-                comment.edit(content)
-                return
+                comment.delete()
+                break
+
         # If no comment was found, create a new one
         pr.create_issue_comment(content)
 
