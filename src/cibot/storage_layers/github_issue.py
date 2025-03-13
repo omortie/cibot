@@ -1,5 +1,6 @@
 import contextlib
 import json
+import textwrap
 
 from loguru import logger
 import msgspec
@@ -29,8 +30,11 @@ class GithubIssueStorage(BaseStorage):
 
     def get_json_part_from_comment(self) -> Bucket | None:
         body = self.issue.body
-        with contextlib.suppress(Exception):
-            return msgspec.json.decode(body.split("```json")[1].split("```")[0].strip(), type=Bucket)
+        logger.info(f"Checking issue body: {body}")
+        if body:
+            body = body.split("```json")[1].split("```")[0].strip()
+            return msgspec.json.decode(body, type=Bucket)
+
 
     def get[T](self, key: str, type_: type[T]) -> T | None:
         if bucket := self.get_json_part_from_comment():
@@ -50,8 +54,10 @@ class GithubIssueStorage(BaseStorage):
         if bucket := self.get_json_part_from_comment():
             logger.info(f"Updating key {key} with value {raw}")
             bucket.plugin_srorage[key] = raw
-            new_comment = comment_base.format(msgspec.json.encode(bucket))
+            new_comment = comment_base.format(msgspec.json.encode(bucket).decode())
         else:
             logger.info(f"Creating new bucket with key {key} with value {raw}")
-            new_comment = comment_base.format(msgspec.json.encode(Bucket(plugin_srorage={key: raw})))
-        self.issue.edit(body=new_comment)
+            new_comment = comment_base.format(
+                msgspec.json.encode(Bucket(plugin_srorage={key: raw})).decode()
+            )
+        self.issue.edit(body=textwrap.dedent(new_comment))
