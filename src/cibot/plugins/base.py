@@ -42,3 +42,9 @@ class CiBotPlugin:
 
         this would be used in conjunction with the plugin name in the bot comment.
         """
+
+    def should_fail_workflow(self) -> bool:
+        """
+        Return True if the workflow should fail, False otherwise.
+        """
+        return False

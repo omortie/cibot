@@ -117,7 +117,12 @@ class PluginRunner:
         for plugin in self.plugins:
             plugin.on_pr_changed(pr)
         self.comment_on_pr(pr)
-
+    
+    def check_for_errors(self):
+        for plugin in self.plugins:
+            if plugin.should_fail_workflow():
+                raise ValueError(f"Plugin {plugin.plugin_name()} failed")
+            
     def comment_on_pr(self, pr: int):  # sourcery skip: use-join
         plugin_comments = {
             plugin.plugin_name(): plugin.provide_comment_for_pr()
