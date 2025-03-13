@@ -146,3 +146,5 @@ def on_commit_to_main(plugin: Annotated[list[str], typer.Option()]):
 
 def main():
     app()
+
+

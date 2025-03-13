@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     number: int | None = None
     
 class Bucket(msgspec.Struct):
-    plugin_srorage: dict[str, bytes]
+    plugin_srorage: dict[str, str]
 
 
 class GithubIssueStorage(BaseStorage):
@@ -39,7 +39,7 @@ class GithubIssueStorage(BaseStorage):
 
 
     def set(self, key: str, value: msgspec.Struct) -> None:
-        raw = msgspec.json.encode(value)
+        raw = msgspec.json.encode(value).decode()
         comment_base = """
         ### CIBot Storage Layer
         ### Do not edit this comment
@@ -48,8 +48,10 @@ class GithubIssueStorage(BaseStorage):
         ```
         """
         if bucket := self.get_json_part_from_comment():
+            logger.info(f"Updating key {key} with value {raw}")
             bucket.plugin_srorage[key] = raw
             new_comment = comment_base.format(msgspec.json.encode(bucket))
         else:
+            logger.info(f"Creating new bucket with key {key} with value {raw}")
             new_comment = comment_base.format(msgspec.json.encode(Bucket(plugin_srorage={key: raw})))
         self.issue.edit(body=new_comment)
