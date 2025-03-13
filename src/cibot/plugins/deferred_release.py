@@ -65,7 +65,9 @@ class DeferredReleasePlugin(CiBotPlugin):
             case ChangeNote():
                 self._pr_comment = textwrap.dedent(
                     f"""
-                    ### {note.change_type.value}: {note.header}
+                    ### {note.header}
+                    Change Type: {note.change_type.value}
+                    Description:  
                     {note.description}
                     """
                 )
