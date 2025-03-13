@@ -3,6 +3,7 @@ import enum
 import textwrap
 from typing import ClassVar, override
 
+from loguru import logger
 import msgspec
 from cibot.backends.base import ERROR_GIF, PrDescription
 from cibot.plugins.base import CiBotPlugin, ReleaseType
@@ -104,6 +105,7 @@ class DeferredReleasePlugin(CiBotPlugin):
     ) -> ChangeNote | ReleasePrDesc | None:
         pr_description = self.backend.get_pr_description(pr_id)
         if release := self._get_release_desc_for_pr(pr_description):
+            logger.info(f"prased pr as a release pr: {release}")
             return release
 
 
@@ -122,13 +124,15 @@ class DeferredReleasePlugin(CiBotPlugin):
                 break
 
         if change_type:
-            return ChangeNote(
+            ret = ChangeNote(
                 change_type=change_type,
                 header=pr_description.header,
                 pr_number=pr_id,
                 description=self._parse_pr_description(pr_description.description),
                 contributor=pr_description.contributor,
             )
+            logger.info(f"parsed pr as a change note: {ret}")
+            return ret
 
         self._pr_comment = (
             f"Couldn't parse PR\n {ERROR_GIF} \n {self.__doc__}"
