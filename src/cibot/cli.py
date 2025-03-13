@@ -68,7 +68,7 @@ def get_storage() -> BaseStorage:
             raise ValueError(f"Unknown storage {settings.STORAGE}")
 
 
-def get_backend() -> CiBotBackendBase:
+def get_backend(pr_number: int | None = None) -> CiBotBackendBase:
     settings = Settings()
     backend_name = settings.BACKEND
     if not backend_name:
@@ -79,7 +79,7 @@ def get_backend() -> CiBotBackendBase:
 
             repo = get_github_repo()
             storage = get_storage()
-            return GithubBackend(repo, storage)
+            return GithubBackend(repo, storage, pr_number=pr_number)
         case _:
             raise ValueError(f"Unknown backend {backend_name}")
 
@@ -138,8 +138,8 @@ class PluginRunner:
             plugin.on_commit_to_main(self.backend.get_current_commit_hash())
 
 
-def get_runner(plugins: list[str]) -> PluginRunner:
-    backend = get_backend()
+def get_runner(plugins: list[str], pr_number: int | None = None) -> PluginRunner:
+    backend = get_backend(pr_number)
     storage = get_storage()
     return PluginRunner(get_plugins(plugins, backend, storage), backend, storage)
 
@@ -147,7 +147,7 @@ EMPTY_LIST = []
 
 @app.command()
 def on_pr_changed(pr: int, plugin: Annotated[list[str], typer.Option()]  ):
-    runner = get_runner(plugin)
+    runner = get_runner(plugin, pr_number=pr)
     runner.on_pr_changed(pr)
 
 

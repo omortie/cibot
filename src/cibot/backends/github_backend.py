@@ -8,9 +8,10 @@ from cibot.storage_layers.base import BaseStorage
 
 
 class GithubBackend(CiBotBackendBase):
-    def __init__(self, repo: Repository, storage: BaseStorage) -> None:
+    def __init__(self, repo: Repository, storage: BaseStorage, pr_number: int | None) -> None:
         self.repo = repo
         self.changes_storage = storage
+        self.pr_number = pr_number
 
     BOT_COMMENT_ID: ClassVar[str] = "878ae1db-766f-49c7-a1a8-59f7be1fee8f"
 
@@ -18,10 +19,6 @@ class GithubBackend(CiBotBackendBase):
     def name(self):
         return "github"
 
-    @property
-    def pr_number(self) -> int | None:
-        if pr := os.environ.get("PR_NUMBER"):
-            return int(pr)
 
     @override
     def create_pr_comment(self, content: str) -> None:
