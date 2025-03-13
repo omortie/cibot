@@ -3,7 +3,7 @@ import textwrap
 from typing import ClassVar, override
 
 import msgspec
-from cibot.backends.base import PrDescription
+from cibot.backends.base import ERROR_GIF, PrDescription
 from cibot.plugins.base import CiBotPlugin, ReleaseType
 
 
@@ -106,34 +106,58 @@ class DeferredReleasePlugin(CiBotPlugin):
     #         f"(https://github.com/{repo_slug}/pull/{change_note.pr_number}/)"
     #     )
 
-    def _get_change_notes_for_current_pr(self, pr_id: int) -> ChangeNote | ReleasePr:
+    def _get_change_notes_for_current_pr(self, pr_id: int) -> ChangeNote | ReleasePr | None:
         labels = self.backend.get_pr_labels(pr_id)
 
-        change_type = None
 
-        def match_change_type(label: str) -> ChangeType | None:
+        def find_change_type(label: str) -> ChangeType | None:
             for change_type in ChangeType:
                 if change_type.value.lower() == label.lower():
                     return change_type
             return None
-            
-            
+        
+        def find_release_type(label: str) -> ReleaseType | None:
+            lower = label.lower()
+            if 'release' not in lower:
+                return None
+
+            for release_type in ReleaseType:
+                if release_type.value.lower() in lower:
+                    return release_type
+            return None
+        change_type = None
+        release_type = None
+        
         for label in labels:
-            if match := match_change_type(label):
+            if match := find_change_type(label):
                 change_type = match
                 break
-        if change_type is None:
-            raise ValueError("No change type found in PR labels")
+            if match := find_release_type(label):
+                release_type = match
+                break
 
-        pr_description = self.backend.get_pr_description(pr_id)
 
         def parse_pr_description(pr_description: str) -> str:
             return pr_description.split("___")[0].strip()
 
-        return ChangeNote(
-            change_type=change_type,
-            header=pr_description.header,
-            pr_number=pr_id,
-            description=parse_pr_description(pr_description.description),
-            contributor=pr_description.contributor,
+        pr_description = self.backend.get_pr_description(pr_id)
+        if release_type:
+            return ReleasePr(
+                header=pr_description.header,
+                pr_number=pr_id,
+                description=parse_pr_description(pr_description.description),
+                contributor=pr_description.contributor,
+                release_type=release_type,
+            )
+        if change_type:
+            return ChangeNote(
+                change_type=change_type,
+                header=pr_description.header,
+                pr_number=pr_id,
+                description=parse_pr_description(pr_description.description),
+                contributor=pr_description.contributor,
+            )
+        self._pr_comment = (
+            f"No change type found in the PR labels\n {ERROR_GIF} \n {self.__doc__}"
         )
+        self._should_fail_work_flow = True

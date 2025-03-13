@@ -11,6 +11,7 @@ class PRContributor(Struct):
     pr_author_username: str
     pr_author_fullname: str | None
 
+ERROR_GIF = "https://media1.tenor.com/m/FOzbM2mVKG0AAAAC/error-windows-xp.gif"
 
 class PrDescription(Struct):
     contributor: PRContributor

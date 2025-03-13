@@ -116,7 +116,13 @@ class PluginRunner:
         for plugin in self.plugins:
             plugin.on_pr_changed(pr)
         self.comment_on_pr(pr)
-    
+        self.check_for_errors()
+
+    def on_commit_to_main(self):
+        for plugin in self.plugins:
+            plugin.on_commit_to_main(self.backend.get_current_commit_hash())
+        self.check_for_errors()
+
     def check_for_errors(self):
         for plugin in self.plugins:
             if plugin.should_fail_workflow():
@@ -132,9 +138,6 @@ class PluginRunner:
             content += f"### {plugin_name}\n{comment}\n___\n"
         self.backend.create_pr_comment(content)
 
-    def on_commit_to_main(self):
-        for plugin in self.plugins:
-            plugin.on_commit_to_main(self.backend.get_current_commit_hash())
 
 
 def get_runner(plugins: list[str], pr_number: int | None = None) -> PluginRunner:

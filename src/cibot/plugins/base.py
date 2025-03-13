@@ -22,6 +22,7 @@ class CiBotPlugin:
     def __init__(self, backend: CiBotBackendBase, storage: BaseStorage) -> None:
         self.backend = backend
         self.storage = storage
+        self._should_fail_work_flow = False
         if backend.name() not in self.supported_backednds:
             raise ValueError(f"Backend {backend.name} is not supported by this plugin")
 
@@ -47,4 +48,4 @@ class CiBotPlugin:
         """
         Return True if the workflow should fail, False otherwise.
         """
-        return False
+        return self._should_fail_work_flow
