@@ -19,15 +19,12 @@ class GithubIssueStorage(BaseStorage):
         settings = Settings()
         if not settings.number:
             raise ValueError("missing STORAGE_ISSUE_NUMBER")
-        comments = repo.get_issue(settings.number).get_comments()
-        logger.info(f"Found {comments} comments in issue")
-        self.comment = next(
-            iter(comments)
-        )
-        assert self.comment, "No comments found in issue"
+        issue = repo.get_issue(settings.number)
+        logger.info(f"Found issue {issue.title}")    
+        self.issue = issue
 
     def get_json_part_from_comment(self) -> dict[str, bytes] | None:
-        body = self.comment.body
+        body = self.issue.body
         try:
             return json.loads(body.split("```json")[1].split("```")[0].strip())
         except IndexError:
@@ -54,4 +51,4 @@ class GithubIssueStorage(BaseStorage):
             new_comment = comment_base.format(json.dumps(exists))
         else:
             new_comment = comment_base.format(json.dumps({key: raw}))
-        self.comment.edit(new_comment)
+        self.issue.edit(body=new_comment)
