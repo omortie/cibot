@@ -88,9 +88,9 @@ class DeferredReleasePlugin(CiBotPlugin):
         bucket_key = f"{self.plugin_name()}-pending-changes"
         match note := self._get_change_notes_for_current_pr(pr.pr_number):
             case ChangeNote():
-                current_bucket = self.storage.get(bucket_key, ReleaseNoteBucket)
-                current_bucket.notes[pr.pr_number] = note
-                self.storage.set(bucket_key, current_bucket)
+                if current_bucket := self.storage.get(bucket_key, ReleaseNoteBucket):
+                    current_bucket.notes[pr.pr_number] = note
+                self.storage.set(bucket_key, current_bucket or ReleaseNoteBucket(notes={pr.pr_number: note}))
 
             case ReleasePr():
                 self._pr_comment = textwrap.dedent(

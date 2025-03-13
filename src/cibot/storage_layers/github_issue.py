@@ -29,12 +29,11 @@ class GithubIssueStorage(BaseStorage):
         with contextlib.suppress(Exception):
             return json.loads(body.split("```json")[1].split("```")[0].strip())
 
-    def get[T](self, key: str, type_: type[T]) -> T:
-        raw = self.get_json_part_from_comment()
-        if raw is None:
-            raise ValueError("No JSON part found in comment")
+    def get[T](self, key: str, type_: type[T]) -> T | None:
+        if raw := self.get_json_part_from_comment()
+            return msgspec.json.decode(raw[key], type=type_)
+        return None
 
-        return msgspec.json.decode(raw[key], type=type_)
 
     def set(self, key: str, value: msgspec.Struct) -> None:
         raw = msgspec.json.encode(value)
