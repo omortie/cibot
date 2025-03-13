@@ -92,14 +92,16 @@ class DeferredReleasePlugin(CiBotPlugin):
             case ChangeNote():
                 if current_bucket := self.storage.get(bucket_key, ReleaseNoteBucket):
                     current_bucket.notes[pr.pr_number] = res
+                logger.info(f"Adding change note to pending changes: {res}")
                 self.storage.set(
                     bucket_key,
                     current_bucket or ReleaseNoteBucket(notes={pr.pr_number: res}),
                 )
 
             case ReleasePrDesc():
-                _ = self._get_release_repr(res)
-            
+                self._release_repr = self._get_release_repr(res)
+                return res.release_type
+
     def _parse_pr(
         self, pr_id: int
     ) -> ChangeNote | ReleasePrDesc | None:
