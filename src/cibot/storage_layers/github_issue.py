@@ -30,7 +30,7 @@ class GithubIssueStorage(BaseStorage):
             return json.loads(body.split("```json")[1].split("```")[0].strip())
 
     def get[T](self, key: str, type_: type[T]) -> T | None:
-        if raw := self.get_json_part_from_comment()
+        if raw := self.get_json_part_from_comment():
             return msgspec.json.decode(raw[key], type=type_)
         return None
 
