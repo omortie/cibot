@@ -69,7 +69,7 @@ class GithubBackend(CiBotBackendBase):
             if identifier in comment.body:
                 comment.delete()
                 break
-
+        content += f"\n<!--CIBOT-COMMENT-ID {identifier} -->"
         # If no comment was found, create a new one
         pr.create_issue_comment(content)
 
