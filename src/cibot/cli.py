@@ -68,7 +68,7 @@ def get_storage() -> BaseStorage:
             raise ValueError(f"Unknown storage {settings.STORAGE}")
 
 
-def get_backend(pr_number: int | None = None) -> CiBotBackendBase:
+def get_backend(pr_number: int | None) -> CiBotBackendBase:
     settings = Settings()
     backend_name = settings.BACKEND
     if not backend_name:

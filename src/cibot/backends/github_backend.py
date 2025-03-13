@@ -28,7 +28,7 @@ class GithubBackend(CiBotBackendBase):
                 content,
                 self.BOT_COMMENT_ID,
             )
-        raise ValueError("PR_NUMBER not found in environment")
+        raise ValueError("pr_number is not set")
 
     @override
     def publish_release(self, project_name, version):
