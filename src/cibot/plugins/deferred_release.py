@@ -152,16 +152,19 @@ class DeferredReleasePlugin(CiBotPlugin):
             return None
         labels = self.backend.get_pr_labels(pr_description.pr_number)
         release_type = None
+        logger.info(f"searching for a release label in: {labels}")
         for label in labels:
             if match := find_release_type(label):
                 release_type = match
                 break
         if not release_type:
+            logger.info("No release label found; this is not a release PR")
             return None
         
-
+        logger.info(f"Found release label: {release_type}")
+        logger.info("Checking for pending changes")
         if changes := self.storage.get(f"{self.plugin_name()}-pending-changes", ReleaseNoteBucket):
-
+            logger.info(f"Found pending changes: {changes}")
             return ReleasePrDesc(
                 contributor=pr_description.contributor,
                 header=pr_description.header,
@@ -170,6 +173,8 @@ class DeferredReleasePlugin(CiBotPlugin):
                 release_type=release_type,
                 changes=changes.notes,
             )
+            
+            
     def _get_release_repr(self, release: ReleasePrDesc) -> str:
         def repr_change_note_suffix(change_note: ChangeNote) -> str:
             settings = GithubSettings()
