@@ -41,7 +41,6 @@ class GithubSettings(BaseSettings):
         "env_prefix": "CIBOT_GITHUB_",
     }
     TOKEN: str | None = None
-    STORAGE_ISSUE_NUMBER: int | None = None
     REPO_SLUG: str | None = None
 
 
@@ -63,17 +62,8 @@ def get_storage() -> BaseStorage:
     match settings.STORAGE:
         case "github_issue":
             from cibot.storage_layers.github_issue import GithubIssueStorage
-
-            gh_settings = GithubSettings()
             repo = get_github_repo()
-            if not gh_settings.STORAGE_ISSUE_NUMBER:
-                raise ValueError("missing STORAGE_ISSUE_NUMBER")
-            issue = (
-                repo.get_issue(gh_settings.STORAGE_ISSUE_NUMBER)
-                .get_comments()
-                .get_page(0)[0]
-            )
-            return GithubIssueStorage(issue)
+            return GithubIssueStorage(repo)
         case _:
             raise ValueError(f"Unknown storage {settings.STORAGE}")
 
