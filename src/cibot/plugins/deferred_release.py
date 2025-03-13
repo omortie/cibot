@@ -189,10 +189,10 @@ class DeferredReleasePlugin(CiBotPlugin):
                 change
             )
         
-        comment = "### Release: {res.release_type.value}\n"
+        comment = f"### Release: {release.release_type.value}\n"
         comment += "#### Changes\n"
         for change_type, changes in changelogs_by_type.items():
-            comment += f"##### {change_type.value}\n"
+            comment += f"##### {change_type.value}(es)\n"
             for change in changes:
                 comment += f"- **{change.header}** - {change.description}\n {repr_change_note_suffix(change)}\n"
 
