@@ -129,7 +129,7 @@ class PluginRunner:
         }
         content = ""
         for plugin_name, comment in plugin_comments.items():
-            content += f"### {plugin_name}\n{comment}\n"
+            content += f"### {plugin_name}\n{comment}\n___\n"
         self.backend.create_pr_comment(content)
 
     def on_commit_to_main(self):
