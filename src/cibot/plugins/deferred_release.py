@@ -1,3 +1,4 @@
+from collections import defaultdict
 import enum
 import textwrap
 from typing import ClassVar, override
@@ -5,6 +6,7 @@ from typing import ClassVar, override
 import msgspec
 from cibot.backends.base import ERROR_GIF, PrDescription
 from cibot.plugins.base import CiBotPlugin, ReleaseType
+from cibot.settings import GithubSettings
 
 
 class ChangeType(enum.Enum):
@@ -19,9 +21,10 @@ class ChangeNote(PrDescription):
     change_type: ChangeType
 
 
-class ReleasePr(PrDescription):
+class ReleasePrDesc(PrDescription):
     release_type: ReleaseType
-
+    changes: dict[int, ChangeNote]
+    
 
 class ReleaseNoteBucket(msgspec.Struct):
     notes: dict[int, ChangeNote]
@@ -46,11 +49,13 @@ class DeferredReleasePlugin(CiBotPlugin):
     Everything under this won't be added in the release notes.
     ```
     3. When the project owner wants to initiate a release pipeline they should create a PR
-    containing the Release tag of either [minor | major | patch]:
+    containing the Release tag of either [minor | major | patch] as a PR label.
+    The author should also provide a description of the release in the PR description.
+    i.e
     ```md
-    This PR initiates the release pipeline.
+    This release contains several bug fixes and a new feature that allows users to do X.
     ___
-
+    ```
     """
 
     supported_backednds: ClassVar[tuple[str, ...]] = ("github",)
@@ -61,7 +66,7 @@ class DeferredReleasePlugin(CiBotPlugin):
 
     @override
     def on_pr_changed(self, pr) -> None:
-        match note := self._get_change_notes_for_current_pr(pr):
+        match note := self._parse_pr(pr):
             case ChangeNote():
                 self._pr_comment = textwrap.dedent(
                     f"""
@@ -71,12 +76,8 @@ class DeferredReleasePlugin(CiBotPlugin):
                     {note.description}
                     """
                 )
-            case ReleasePr():
-                self._pr_comment = textwrap.dedent(
-                    f"""
-                    ### Release: {note.release_type.value}
-                    """
-                )
+            case ReleasePrDesc():
+                self._pr_comment = self._get_release_repr(note)
 
     @override
     def provide_comment_for_pr(self):
@@ -86,78 +87,109 @@ class DeferredReleasePlugin(CiBotPlugin):
     def on_commit_to_main(self, commit_hash: str):
         pr = self.backend.get_commit_associated_pr(commit_hash)
         bucket_key = f"{self.plugin_name()}-pending-changes"
-        match note := self._get_change_notes_for_current_pr(pr.pr_number):
+        match res := self._parse_pr(pr.pr_number):
             case ChangeNote():
                 if current_bucket := self.storage.get(bucket_key, ReleaseNoteBucket):
-                    current_bucket.notes[pr.pr_number] = note
-                self.storage.set(bucket_key, current_bucket or ReleaseNoteBucket(notes={pr.pr_number: note}))
-
-            case ReleasePr():
-                self._pr_comment = textwrap.dedent(
-                    f"""
-                    ### Release: {note.release_type.value}
-                    """
+                    current_bucket.notes[pr.pr_number] = res
+                self.storage.set(
+                    bucket_key,
+                    current_bucket or ReleaseNoteBucket(notes={pr.pr_number: res}),
                 )
 
-    # def repr_change_note(self, repo: Repository, change_note: ChangeNote) -> str:
-    #     return (
-    #         f"Contributed by [{change_note.contributor.pr_author_fullname or change_note.contributor.pr_author_fullname}]"
-    #         f"(https://github.com/{change_note.contributor.pr_author_fullname}) via [PR #{change_note.pr_number}]"
-    #         f"(https://github.com/{repo_slug}/pull/{change_note.pr_number}/)"
-    #     )
+            case ReleasePrDesc():
+                _ = self._get_release_repr(res)
+            
+    def _parse_pr(
+        self, pr_id: int
+    ) -> ChangeNote | ReleasePrDesc | None:
+        pr_description = self.backend.get_pr_description(pr_id)
+        if release := self._get_release_desc_for_pr(pr_description):
+            return release
 
-    def _get_change_notes_for_current_pr(self, pr_id: int) -> ChangeNote | ReleasePr | None:
+
         labels = self.backend.get_pr_labels(pr_id)
-
-
         def find_change_type(label: str) -> ChangeType | None:
             for change_type in ChangeType:
                 if change_type.value.lower() == label.lower():
                     return change_type
             return None
-        
-        def find_release_type(label: str) -> ReleaseType | None:
-            lower = label.lower()
-            if 'release' not in lower:
-                return None
 
-            for release_type in ReleaseType:
-                if release_type.value.lower() in lower:
-                    return release_type
-            return None
         change_type = None
-        release_type = None
-        
+
         for label in labels:
             if match := find_change_type(label):
                 change_type = match
                 break
-            if match := find_release_type(label):
-                release_type = match
-                break
 
-
-        def parse_pr_description(pr_description: str) -> str:
-            return pr_description.split("___")[0].strip()
-
-        pr_description = self.backend.get_pr_description(pr_id)
-        if release_type:
-            return ReleasePr(
-                header=pr_description.header,
-                pr_number=pr_id,
-                description=parse_pr_description(pr_description.description),
-                contributor=pr_description.contributor,
-                release_type=release_type,
-            )
         if change_type:
             return ChangeNote(
                 change_type=change_type,
                 header=pr_description.header,
                 pr_number=pr_id,
-                description=parse_pr_description(pr_description.description),
+                description=self._parse_pr_description(pr_description.description),
                 contributor=pr_description.contributor,
             )
+
         self._pr_comment = (
-            f"No change type found in the PR labels\n {ERROR_GIF} \n {self.__doc__}"
+            f"Couldn't parse PR\n {ERROR_GIF} \n {self.__doc__}"
         )
         self._should_fail_work_flow = True
+
+
+
+    def _get_release_desc_for_pr(self, pr_description: PrDescription) -> ReleasePrDesc | None:
+        def find_release_type(label: str) -> ReleaseType | None:
+            lower = label.lower()
+            if 'release' not in lower:
+                return None
+            for release_type in ReleaseType:
+                if release_type.value.lower() in lower:
+                    return release_type
+            return None
+        labels = self.backend.get_pr_labels(pr_description.pr_number)
+        release_type = None
+        for label in labels:
+            if match := find_release_type(label):
+                release_type = match
+                break
+        if not release_type:
+            return None
+        
+
+        if changes := self.storage.get(f"{self.plugin_name()}-pending-changes", ReleaseNoteBucket):
+
+            return ReleasePrDesc(
+                contributor=pr_description.contributor,
+                header=pr_description.header,
+                description=self._parse_pr_description(pr_description.description),
+                pr_number=pr_description.pr_number,
+                release_type=release_type,
+                changes=changes.notes,
+            )
+    def _get_release_repr(self, release: ReleasePrDesc) -> str:
+        def repr_change_note_suffix(change_note: ChangeNote) -> str:
+            settings = GithubSettings()
+            return (
+                f"Contributed by [{change_note.contributor.pr_author_fullname or change_note.contributor.pr_author_fullname}]"
+                f"(https://github.com/{change_note.contributor.pr_author_fullname}) via [PR #{change_note.pr_number}]"
+                f"(https://github.com/{settings.REPO_SLUG}/pull/{change_note.pr_number}/)"
+            )
+        changelogs_by_type: dict[ChangeType, list[ChangeNote]] = defaultdict(list)
+        for change in release.changes.values():
+            changelogs_by_type[change.change_type].append(
+                change
+            )
+        
+        comment = "### Release: {res.release_type.value}\n"
+        comment += "#### Changes\n"
+        for change_type, changes in changelogs_by_type.items():
+            comment += f"##### {change_type.value}\n"
+            for change in changes:
+                comment += f"- **{change.header}** - {change.description}\n {repr_change_note_suffix(change)}\n"
+
+        return comment
+
+
+
+    def _parse_pr_description(self, pr_description: str) -> str:
+        return pr_description.split("___")[0].strip()

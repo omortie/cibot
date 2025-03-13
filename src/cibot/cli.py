@@ -10,6 +10,7 @@ import typer
 
 from cibot.backends.base import CiBotBackendBase
 from cibot.plugins.base import CiBotPlugin
+from cibot.settings import GithubSettings, CiBotSettings
 from cibot.storage_layers.base import BaseStorage
 
 from .plugins.deferred_release import DeferredReleasePlugin
@@ -23,24 +24,6 @@ template_env = jinja2.Environment(
     loader=jinja2.FileSystemLoader(Path(__file__).parent / "templates"),
     autoescape=jinja2.select_autoescape(),
 )
-
-
-
-class Settings(BaseSettings):
-    model_config = {
-        "env_prefix": "CIBOT_",
-    }
-
-    BACKEND: str = "github"
-    STORAGE: str = "github_issue"
-
-
-class GithubSettings(BaseSettings):
-    model_config = {
-        "env_prefix": "CIBOT_GITHUB_",
-    }
-    TOKEN: str | None = None
-    REPO_SLUG: str | None = None
 
 
 @cache
@@ -57,10 +40,11 @@ def get_github_repo() -> "Repository":
 
 
 def get_storage() -> BaseStorage:
-    settings = Settings()
+    settings = CiBotSettings()
     match settings.STORAGE:
         case "github_issue":
             from cibot.storage_layers.github_issue import GithubIssueStorage
+
             repo = get_github_repo()
             return GithubIssueStorage(repo)
         case _:
@@ -68,7 +52,7 @@ def get_storage() -> BaseStorage:
 
 
 def get_backend(pr_number: int | None) -> CiBotBackendBase:
-    settings = Settings()
+    settings = CiBotSettings()
     backend_name = settings.BACKEND
     if not backend_name:
         raise ValueError("BACKEND environment variable is not set")
@@ -127,7 +111,7 @@ class PluginRunner:
         for plugin in self.plugins:
             if plugin.should_fail_workflow():
                 raise ValueError(f"Plugin {plugin.plugin_name()} failed")
-            
+
     def comment_on_pr(self, pr: int):  # sourcery skip: use-join
         plugin_comments = {
             plugin.plugin_name(): plugin.provide_comment_for_pr()
@@ -139,16 +123,17 @@ class PluginRunner:
         self.backend.create_pr_comment(content)
 
 
-
 def get_runner(plugins: list[str], pr_number: int | None = None) -> PluginRunner:
     backend = get_backend(pr_number)
     storage = get_storage()
     return PluginRunner(get_plugins(plugins, backend, storage), backend, storage)
 
+
 EMPTY_LIST = []
 
+
 @app.command()
-def on_pr_changed(pr: int, plugin: Annotated[list[str], typer.Option()]  ):
+def on_pr_changed(pr: int, plugin: Annotated[list[str], typer.Option()]):
     runner = get_runner(plugin, pr_number=pr)
     runner.on_pr_changed(pr)
 
