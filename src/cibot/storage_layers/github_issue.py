@@ -44,13 +44,14 @@ class GithubIssueStorage(BaseStorage):
 
     def set(self, key: str, value: msgspec.Struct) -> None:
         raw = msgspec.json.encode(value).decode()
-        comment_base = """
-        ### CIBot Storage Layer
-        ### Do not edit this comment
-        ```json
-        {}
-        ```
-        """
+        comment_base =  \
+"""
+### CIBot Storage Layer
+### Do not edit this comment
+```json
+{}
+```
+"""
         if bucket := self.get_json_part_from_comment():
             logger.info(f"Updating key {key} with value {raw}")
             bucket.plugin_srorage[key] = raw
