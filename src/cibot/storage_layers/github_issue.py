@@ -54,10 +54,12 @@ class GithubIssueStorage(BaseStorage):
         if bucket := self.get_json_part_from_comment():
             logger.info(f"Updating key {key} with value {raw}")
             bucket.plugin_srorage[key] = raw
-            new_comment = comment_base.format(msgspec.json.encode(bucket).decode())
+            new_comment = comment_base.format(
+                json.dumps(msgspec.to_builtins(bucket), indent=2)
+            )
         else:
             logger.info(f"Creating new bucket with key {key} with value {raw}")
             new_comment = comment_base.format(
-                msgspec.json.encode(Bucket(plugin_srorage={key: raw})).decode()
+                json.dumps(msgspec.to_builtins(Bucket(plugin_srorage={key: raw})), indent=2)
             )
         self.issue.edit(body=textwrap.dedent(new_comment))
