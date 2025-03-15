@@ -85,7 +85,7 @@ class DeferredReleasePlugin(CiBotPlugin):
         return self._pr_comment
 
     @override
-    def on_commit_to_main(self, commit_hash: str):
+    def on_commit_to_main(self, commit_hash: str) -> ReleaseType | None:
         pr = self.backend.get_commit_associated_pr(commit_hash)
         bucket_key = f"{self.plugin_name()}-pending-changes"
         match res := self._parse_pr(pr.pr_number):

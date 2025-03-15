@@ -97,9 +97,16 @@ class PluginRunner:
         self.backend.configure_git("cibot", "cibot@no.reply")
 
     def on_pr_changed(self, pr: int):
-        for plugin in self.plugins:
+        results = [
             plugin.on_pr_changed(pr)
+            for plugin in self.plugins
+        ]
+
         self.comment_on_pr(pr)
+        if release_type := next(
+            (res for res in results if res is not None), None
+        ):
+            
         self.check_for_errors()
 
     def on_commit_to_main(self):

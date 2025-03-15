@@ -26,9 +26,9 @@ class CiBotPlugin:
         if backend.name() not in self.supported_backednds:
             raise ValueError(f"Backend {backend.name} is not supported by this plugin")
 
-    def on_pr_changed(self, pr: int) -> None: ...
+    def on_pr_changed(self, pr: int) -> ReleaseType | None: ...
 
-    def on_commit_to_main(self, commit_hash: str) -> ReleaseType | None:
+    def on_commit_to_main(self, commit_hash: str) ->  None:
         return None
 
     def prepare_release(self, release_type: ReleaseType) -> None: ...
