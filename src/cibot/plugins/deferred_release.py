@@ -1,3 +1,4 @@
+import cgi
 import datetime
 import enum
 import json
@@ -119,9 +120,8 @@ class DeferredReleasePlugin(CiBotPlugin):
 				self._get_release_repr(self._release_desc, next_version), next_version
 			)
 			existing_changes_json = json.loads(changelog_json.read_text(encoding="utf-8"))
-			existing_changes_json[next_version] = json.loads(
-				msgspec.to_builtins(self._release_desc)
-			) 
+			existing_changes_json[next_version] = msgspec.to_builtins(self._release_desc)
+			changelog_json.write_text(json.dumps(existing_changes_json), encoding="utf-8")
 			return [changelog_readable, changelog_json]
 		return []
 
