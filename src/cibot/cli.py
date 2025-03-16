@@ -138,6 +138,7 @@ class PluginRunner:
 			if list(git_changes):
 				for change in git_changes:
 					self.backend.git("add", str(change))
+					logger.info(f"Added {change} to git")
 				self.backend.git("commit", "-m", f"Prepare release for PR #{pr}")
 			self.check_for_errors()
 			self.backend.git("push")
