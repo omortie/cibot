@@ -1,18 +1,19 @@
-from functools import cache
 import itertools
 import os
+from functools import cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated
+
 import jinja2
-from loguru import logger
 import msgspec
+import typer
+from loguru import logger
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typer import Typer
-import typer
 
 from cibot.backends.base import CiBotBackendBase
-from cibot.plugins.base import CiBotPlugin
-from cibot.settings import GithubSettings, CiBotSettings
+from cibot.plugins.base import CiBotPlugin, VersionBumpPlugin
+from cibot.settings import CiBotSettings, GithubSettings
 from cibot.storage_layers.base import BaseStorage
 
 from .plugins.deferred_release import DeferredReleasePlugin
@@ -90,9 +91,10 @@ class ReleasePrMarker(msgspec.Struct):
 	"""Mark a release PR workflow as already ran"""
 
 	pr: int
+	version: str
 
 	def as_key(self) -> str:
-		return f"release-pr-{self.pr}"
+		return f"release-pr-{self.pr}-{self.version}"
 
 
 class PluginRunner:
@@ -109,26 +111,37 @@ class PluginRunner:
 
 	def on_pr_changed(self, pr: int):
 		results = [plugin.on_pr_changed(pr) for plugin in self.plugins]
-
-		self.comment_on_pr(pr)
 		self.check_for_errors()
 
 		if release_type := next((res for res in results if res is not None), None):
-			if self.storage.get(ReleasePrMarker(pr).as_key(), ReleasePrMarker):
+			# find plugin for release_type
+			if not (
+				version_bump_plugin := next(
+					plugin for plugin in self.plugins if isinstance(plugin, VersionBumpPlugin)
+				)
+			):
+				logger.error("no plugin found for version bump")
+			logger.info(f"Found version bump plugin: {version_bump_plugin.plugin_name()}")
+			next_version = version_bump_plugin.next_version(release_type)
+			release_marker = ReleasePrMarker(pr, next_version)
+			if self.storage.get(release_marker.as_key(), ReleasePrMarker):
 				logger.info(f"Release workflow for PR #{pr} already ran")
 				return
+
+			logger.info(f"next version is {next_version}")
 			git_changes = itertools.chain(
-				plugin.prepare_release(release_type) for plugin in self.plugins
+				plugin.prepare_release(release_type, next_version) for plugin in self.plugins
 			)
 
-			for change in git_changes:
-				self.backend.git("add", str(change))
+
 			if list(git_changes):
+				for change in git_changes:
+					self.backend.git("add", str(change))
 				self.backend.git("commit", "-m", f"Prepare release for PR #{pr}")
 			self.check_for_errors()
 			self.backend.git("push")
-			self.storage.set(ReleasePrMarker(pr).as_key(), ReleasePrMarker(pr))
-			self.backend.create_pr_comment(" Release workflow ran successfully")
+			self.storage.set(release_marker.as_key(), release_marker)
+			self.comment_on_pr(pr)
 
 	def on_commit_to_main(self):
 		for plugin in self.plugins:

@@ -110,9 +110,7 @@ class DeferredReleasePlugin(CiBotPlugin):
 			return [changelog_file]
 		return []
 		
-	@override
-	def provide_comment_for_pr(self):
-		return self._pr_comment
+
 
 	@override
 	def on_commit_to_main(self, commit_hash: str) ->  None | ReleaseInfo:
