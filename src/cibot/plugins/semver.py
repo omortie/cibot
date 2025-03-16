@@ -45,22 +45,17 @@ class SemverPlugin(VersionBumpPlugin):
 
 	@override
 	def prepare_release(self, release_type: BumpType, next_version: str) -> list[Path]:
-		self._bump_pyproject(next_version)
+		content = self._pyproject.read_text()
+		new_content = re.sub(SEMVER_REGEX, next_version, content)
+		self._pyproject.write_text(new_content)
 		return [self._pyproject]
 
 	@property
 	def _pyproject(self) -> Path:
 		return Path.cwd() / "pyproject.toml"
 
-	def _bump_pyproject(self, new_version: str) -> None:
-		content = self._pyproject.read_text()
-		new_content = re.sub(SEMVER_REGEX, new_version, content)
-		self._pyproject.write_text(new_content)
-
 	def _current_version_from_pyproject(self) -> str:
 		content = self._pyproject.read_text()
-		for line in content.split("\n"):
-			version_match = SEMVER_REGEX.match(line)
-			if version_match:
-				return version_match.group(0)
+		if matched := SEMVER_REGEX.search(content):
+			return f"{matched.group(0)}.{matched.group(1)}.{matched.group(2)}"
 		raise ValueError("Invalid version format in pyproject.toml")
