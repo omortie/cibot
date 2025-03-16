@@ -1,5 +1,4 @@
 import itertools
-import os
 from functools import cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated
@@ -8,7 +7,6 @@ import jinja2
 import msgspec
 import typer
 from loguru import logger
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from typer import Typer
 
 from cibot.backends.base import CiBotBackendBase

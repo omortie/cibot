@@ -1,16 +1,15 @@
-from collections import defaultdict
 import datetime
 import enum
-from functools import update_wrapper
-from pathlib import Path
 import textwrap
-from turtle import update
+from collections import defaultdict
+from pathlib import Path
 from typing import ClassVar, override
 
-from loguru import logger
 import msgspec
+from loguru import logger
+
 from cibot.backends.base import ERROR_GIF, PrDescription
-from cibot.plugins.base import CiBotPlugin, BumpType, ReleaseInfo
+from cibot.plugins.base import BumpType, CiBotPlugin, ReleaseInfo
 from cibot.settings import GithubSettings
 
 
@@ -64,11 +63,11 @@ class DeferredReleasePlugin(CiBotPlugin):
 	"""
 
 	supported_backednds: ClassVar[tuple[str, ...]] = ("github",)
-	
+
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self._release_desc: ReleasePrDesc | None = None
-	
+
 	@override
 	def plugin_name(self) -> str:
 		return "Deferred Release"
@@ -88,7 +87,7 @@ class DeferredReleasePlugin(CiBotPlugin):
 			case ReleasePrDesc():
 				self._release_desc = note
 				self._pr_comment = self._get_release_repr(note)
-		
+
 	@override
 	def prepare_release(self, release_type: BumpType, next_version: str) -> list[Path]:
 		changelog_file = Path.cwd() / "CHANGELOG.md"
@@ -109,7 +108,7 @@ class DeferredReleasePlugin(CiBotPlugin):
 			update_change_log(self._get_release_repr(self._release_desc, next_version), next_version)
 			return [changelog_file]
 		return []
-		
+
 
 
 	@override
@@ -128,9 +127,9 @@ class DeferredReleasePlugin(CiBotPlugin):
 
 			case ReleasePrDesc():
 				return ReleaseInfo(note=self._get_release_repr(res))
-	
 
-	
+
+
 	def _parse_pr(self, pr_id: int) -> ChangeNote | ReleasePrDesc | None:
 		pr_description = self.backend.get_pr_description(pr_id)
 		if release := self._get_release_desc_for_pr(pr_description):

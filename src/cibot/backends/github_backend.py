@@ -1,9 +1,8 @@
-import os
 from typing import ClassVar, override
+
+import github
 import github.PullRequest
 from github.Repository import Repository
-import github
-
 
 from cibot.backends.base import CiBotBackendBase, PRContributor, PrDescription
 from cibot.storage_layers.base import BaseStorage

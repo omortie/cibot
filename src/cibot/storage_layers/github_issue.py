@@ -1,11 +1,11 @@
-import contextlib
 import json
 import textwrap
 
-from loguru import logger
 import msgspec
-from pydantic_settings import BaseSettings
 from github.Repository import Repository
+from loguru import logger
+from pydantic_settings import BaseSettings
+
 from cibot.storage_layers.base import BaseStorage
 
 

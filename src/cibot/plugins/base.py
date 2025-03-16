@@ -1,8 +1,8 @@
+import enum
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-import enum
 from pathlib import Path
-from typing import AbstractSet, ClassVar
+from typing import ClassVar
 
 from cibot.backends.base import CiBotBackendBase
 from cibot.storage_layers.base import BaseStorage
@@ -21,7 +21,7 @@ class BumpType(enum.Enum):
 @dataclass
 class ReleaseInfo:
 	note: str
-	
+
 
 class CiBotPlugin(ABC):
 	supported_backednds: ClassVar[tuple[str, ...]]
@@ -54,7 +54,7 @@ class CiBotPlugin(ABC):
 		this would be used in conjunction with the plugin name in the bot comment.
 		"""
 		return self._pr_comment
-		
+
 	def should_fail_workflow(self) -> bool:
 		"""
 		Return True if the workflow should fail, False otherwise.
