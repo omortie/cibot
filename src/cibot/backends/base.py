@@ -34,6 +34,9 @@ class CiBotBackendBase(ABC):
 
 	@abstractmethod
 	def publish_release(self, project_name: str, version: str) -> None: ...
+	
+	def run_cmd(self, *args: str) -> None:
+		return subprocess.run([*args], check=False).check_returncode()
 
 	def git(self, *args: str) -> None:
 		return subprocess.run(["git", *args], check=False).check_returncode()
