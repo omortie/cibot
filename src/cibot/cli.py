@@ -3,6 +3,7 @@ from functools import cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated
 
+from cibot.plugins.semver import SemverPlugin
 import jinja2
 import msgspec
 import typer
@@ -70,6 +71,8 @@ def get_backend(pr_number: int | None) -> CiBotBackendBase:
 
 PLUGINS_REGISTRY = {
 	"deferred_release": DeferredReleasePlugin,
+	"semver": SemverPlugin,
+	
 }
 
 

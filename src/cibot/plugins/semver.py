@@ -28,7 +28,7 @@ def bumped_version(bump_type: BumpType, version_raw: str) -> str:
 	return new_version
 
 
-class SemVerPlugin(VersionBumpPlugin):
+class SemverPlugin(VersionBumpPlugin):
 	@override
 	def plugin_name(self) -> str:
 		return "semver"
