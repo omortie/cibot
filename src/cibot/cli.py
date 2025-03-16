@@ -134,6 +134,7 @@ class PluginRunner:
 			git_changes = list(itertools.chain(
 				*[plugin.prepare_release(release_type, next_version) for plugin in self.plugins]
 			))
+			logger.info(f"commiting {git_changes} changes")
 			if git_changes:
 				for change in git_changes:
 					self.backend.git("add", str(change))
