@@ -47,13 +47,12 @@ class CiBotBackendBase(ABC):
 	@abstractmethod
 	def get_pr_labels(self, pr_number: int) -> list[str]: ...
 
+	@abstractmethod
+	def configure_git(self) -> None: ...
+
 	def get_current_commit_hash(self) -> str:
 		return (
 			subprocess.run(["git", "rev-parse", "HEAD"], check=True, capture_output=True)
 			.stdout.decode()
 			.strip()
 		)
-
-	def configure_git(self, username: str, email: str) -> None:
-		self.git("config", "user.name", username)
-		self.git("config", "user.email", email)

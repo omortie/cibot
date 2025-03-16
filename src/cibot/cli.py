@@ -12,7 +12,7 @@ from typer import Typer
 from cibot.backends.base import CiBotBackendBase
 from cibot.plugins.base import CiBotPlugin, VersionBumpPlugin
 from cibot.plugins.semver import SemverPlugin
-from cibot.settings import CiBotSettings, GithubSettings
+from cibot.settings import CiBotSettings
 from cibot.storage_layers.base import BaseStorage
 
 from .plugins.deferred_release import DeferredReleasePlugin
@@ -31,6 +31,8 @@ template_env = jinja2.Environment(
 @cache
 def get_github_repo() -> "Repository":
 	from github import Github
+
+	from cibot.backends.github_backend import GithubSettings
 
 	settings = GithubSettings()
 	if not settings.TOKEN:
@@ -60,11 +62,11 @@ def get_backend(pr_number: int | None) -> CiBotBackendBase:
 		raise ValueError("BACKEND environment variable is not set")
 	match backend_name:
 		case "github":
-			from cibot.backends.github_backend import GithubBackend
+			from cibot.backends.github_backend import GithubBackend, GithubSettings
 
 			repo = get_github_repo()
 			storage = get_storage()
-			return GithubBackend(repo, storage, pr_number=pr_number)
+			return GithubBackend(repo, storage, pr_number=pr_number, settings=GithubSettings())
 		case _:
 			raise ValueError(f"Unknown backend {backend_name}")
 
@@ -107,7 +109,7 @@ class PluginRunner:
 		self.backend = backend
 		self.storage = storage
 		self.plugins = plugins
-		self.backend.configure_git("cibot", "cibot@no.reply")
+		self.backend.configure_git()
 
 	def on_pr_changed(self, pr: int):
 		results = [plugin.on_pr_changed(pr) for plugin in self.plugins]

@@ -1,8 +1,6 @@
-import cgi
 import datetime
 import enum
 import json
-from ntpath import exists
 import textwrap
 from collections import defaultdict
 from pathlib import Path
@@ -100,7 +98,7 @@ class DeferredReleasePlugin(CiBotPlugin):
 			changelog_json.write_text("{}", encoding="utf-8")
 		if not changelog_readable.exists():
 			changelog_readable.write_text("", encoding="utf-8")
-			
+
 		def update_change_log(current_changes: str, version: str) -> None:
 			main_header = "CHANGELOG\n=========\n"
 

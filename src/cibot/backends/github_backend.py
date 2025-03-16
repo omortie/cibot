@@ -3,22 +3,49 @@ from typing import ClassVar, override
 import github
 import github.PullRequest
 from github.Repository import Repository
+from pydantic_settings import BaseSettings
 
 from cibot.backends.base import CiBotBackendBase, PRContributor, PrDescription
 from cibot.storage_layers.base import BaseStorage
 
 
+class GithubSettings(BaseSettings):
+	model_config = {
+		"env_prefix": "CIBOT_GITHUB_",
+	}
+	TOKEN: str | None = None
+	REPO_SLUG: str | None = None
+
+
 class GithubBackend(CiBotBackendBase):
-	def __init__(self, repo: Repository, storage: BaseStorage, pr_number: int | None) -> None:
+	def __init__(
+		self,
+		repo: Repository,
+		storage: BaseStorage,
+		pr_number: int | None,
+		settings: GithubSettings,
+	) -> None:
 		self.repo = repo
 		self.changes_storage = storage
 		self.pr_number = pr_number
+		self.settings = settings
 
 	BOT_COMMENT_ID: ClassVar[str] = "878ae1db-766f-49c7-a1a8-59f7be1fee8f"
 
 	@override
 	def name(self):
 		return "github"
+
+	@override
+	def configure_git(self) -> None:
+		self.git("config", "user.name", "cibot")
+		self.git("config", "user.email", "cibot@no.reply")
+		self.git(
+			"remote",
+			"set-url",
+			"origin",
+			f"https://{self.settings.TOKEN}@github.com/{self.settings.REPO_SLUG}",
+		)
 
 	@override
 	def create_pr_comment(self, content: str) -> None:
