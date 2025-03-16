@@ -41,12 +41,12 @@ class GithubBackend(CiBotBackendBase):
 		self.git("config", "user.name", "cibot")
 		self.git("config", "user.email", "cibot@no.reply")
 		assert self.settings.TOKEN, "TOKEN is not set"
-		self.git(
-			"remote",
-			"set-url",
-			"origin",
-			f"https://{self.settings.TOKEN}@github.com/{self.settings.REPO_SLUG}",
-		)
+		# self.git(
+		# 	"remote",
+		# 	"set-url",
+		# 	"origin",
+		# 	f"https://{self.settings.TOKEN}@github.com/{self.settings.REPO_SLUG}.git",
+		# )
 
 	@override
 	def create_pr_comment(self, content: str) -> None:
