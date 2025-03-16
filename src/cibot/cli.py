@@ -143,8 +143,12 @@ class PluginRunner:
 			self.comment_on_pr(pr)
 
 	def on_commit_to_main(self):
-		for plugin in self.plugins:
-			plugin.on_commit_to_main(self.backend.get_current_commit_hash())
+		
+		release_infos = [plugin.on_commit_to_main(self.backend.get_current_commit_hash()) for plugin in self.plugins]
+		for release_info in release_infos:
+			if release_info:
+				self.backend.git("tag", release_info.tag)
+				self.backend.git("push", "--tags")
 		self.check_for_errors()
 
 	def check_for_errors(self):

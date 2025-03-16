@@ -1,5 +1,6 @@
 import json
 import textwrap
+from typing import override
 
 import msgspec
 from github.Repository import Repository
@@ -18,6 +19,15 @@ class Settings(BaseSettings):
 
 class Bucket(msgspec.Struct):
 	plugin_srorage: dict[str, str]
+	
+COMMENT_BASE = """
+### CIBot Storage Layer
+### Do not edit this comment
+
+```json
+{}
+```
+"""
 
 
 class GithubIssueStorage(BaseStorage):
@@ -44,20 +54,21 @@ class GithubIssueStorage(BaseStorage):
 
 	def set(self, key: str, value: msgspec.Struct) -> None:
 		raw = msgspec.json.encode(value).decode()
-		comment_base = """
-### CIBot Storage Layer
-### Do not edit this comment
-```json
-{}
-```
-"""
+
 		if bucket := self.get_json_part_from_comment():
 			logger.info(f"Updating key {key} with value {raw}")
 			bucket.plugin_srorage[key] = raw
-			new_comment = comment_base.format(json.dumps(msgspec.to_builtins(bucket), indent=2))
+			new_comment = COMMENT_BASE.format(json.dumps(msgspec.to_builtins(bucket), indent=2))
 		else:
 			logger.info(f"Creating new bucket with key {key} with value {raw}")
-			new_comment = comment_base.format(
+			new_comment = COMMENT_BASE.format(
 				json.dumps(msgspec.to_builtins(Bucket(plugin_srorage={key: raw})), indent=2)
 			)
 		self.issue.edit(body=textwrap.dedent(new_comment))
+	@override
+	def delete(self, key: str) -> None:
+		if bucket := self.get_json_part_from_comment():
+			logger.info(f"Deleting key {key}")
+			del bucket.plugin_srorage[key]
+			new_comment = COMMENT_BASE.format(json.dumps(msgspec.to_builtins(bucket), indent=2))
+			self.issue.edit(body=textwrap.dedent(new_comment))

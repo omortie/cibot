@@ -2,6 +2,7 @@ import enum
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
+from re import S
 from typing import ClassVar
 
 from cibot.backends.base import CiBotBackendBase
@@ -21,6 +22,7 @@ class BumpType(enum.Enum):
 
 @dataclass
 class ReleaseInfo:
+	header: str
 	note: str
 
 
@@ -38,7 +40,7 @@ class CiBotPlugin(ABC):
 	def on_pr_changed(self, pr: int) -> BumpType | None:
 		return None
 
-	def on_commit_to_main(self, commit_hash: str) -> None | ReleaseInfo:
+	def on_commit_to_main(self, commit_hash: str, new_version: str | None) -> None | ReleaseInfo:
 		return None
 
 	def prepare_release(self, release_type: BumpType, next_version: str) -> list[Path]:

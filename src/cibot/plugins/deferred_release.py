@@ -11,6 +11,7 @@ from loguru import logger
 
 from cibot.backends.base import ERROR_GIF, PrDescription
 from cibot.plugins.base import BumpType, CiBotPlugin, ReleaseInfo
+from pydantic_settings import BaseSettings
 
 
 class ChangeType(enum.Enum):
@@ -32,6 +33,12 @@ class ReleasePrDesc(PrDescription):
 
 class ReleaseNoteBucket(msgspec.Struct):
 	notes: dict[int, ChangeNote]
+
+class DefferedReleaseSettings(BaseSettings):
+	model_config = {
+		"env_prefix": "DEFERRED_RELEASE_",
+	}
+	PROJECT_NAME: str = ""
 
 
 class DeferredReleasePlugin(CiBotPlugin):
@@ -123,21 +130,24 @@ class DeferredReleasePlugin(CiBotPlugin):
 		return []
 
 	@override
-	def on_commit_to_main(self, commit_hash: str) -> None | ReleaseInfo:
+	def on_commit_to_main(self, commit_hash: str, new_version: str | None) -> None | ReleaseInfo:
 		pr = self.backend.get_commit_associated_pr(commit_hash)
-		bucket_key = f"{self.plugin_name()}-pending-changes"
+		pending_changes_key = f"{self.plugin_name()}-pending-changes"
 		match res := self._parse_pr(pr.pr_number):
 			case ChangeNote():
-				if current_bucket := self.storage.get(bucket_key, ReleaseNoteBucket):
+				if current_bucket := self.storage.get(pending_changes_key, ReleaseNoteBucket):
 					current_bucket.notes[pr.pr_number] = res
 				logger.info(f"Adding change note to pending changes: {res}")
 				self.storage.set(
-					bucket_key,
+					pending_changes_key,
 					current_bucket or ReleaseNoteBucket(notes={pr.pr_number: res}),
 				)
 
 			case ReleasePrDesc():
-				return ReleaseInfo(note=self._get_release_repr(res))
+				settings = DefferedReleaseSettings()
+				# wipe pending changes
+				self.storage.delete(pending_changes_key)
+				return ReleaseInfo(note=self._get_release_repr(res), header=f"{settings.PROJECT_NAME} {new_version}")
 
 	def _parse_pr(self, pr_id: int) -> ChangeNote | ReleasePrDesc | None:
 		pr_description = self.backend.get_pr_description(pr_id)
@@ -223,6 +233,8 @@ class DeferredReleasePlugin(CiBotPlugin):
 			changelogs_by_type[change.change_type].append(change)
 
 		comment = f"### Release: {version or release.release_type.value}\n"
+		comment += f"#### {release.header}\n"
+		comment += f"{release.description}\n"
 		comment += "#### Changes\n"
 		for change_type, changes in changelogs_by_type.items():
 			comment += f"##### {change_type.value}(es)\n"
