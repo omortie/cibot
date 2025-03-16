@@ -88,9 +88,11 @@ class DeferredReleasePlugin(CiBotPlugin):
 				self._release_desc = note
 				self._pr_comment = self._get_release_repr(note)
 				return note.release_type
+
 	@override
 	def prepare_release(self, release_type: BumpType, next_version: str) -> list[Path]:
 		changelog_file = Path.cwd() / "CHANGELOG.md"
+
 		def update_change_log(current_changes: str, version: str) -> None:
 			main_header = "CHANGELOG\n=========\n"
 
@@ -104,15 +106,16 @@ class DeferredReleasePlugin(CiBotPlugin):
 				),
 				encoding="utf-8",
 			)
+
 		if self._release_desc:
-			update_change_log(self._get_release_repr(self._release_desc, next_version), next_version)
+			update_change_log(
+				self._get_release_repr(self._release_desc, next_version), next_version
+			)
 			return [changelog_file]
 		return []
 
-
-
 	@override
-	def on_commit_to_main(self, commit_hash: str) ->  None | ReleaseInfo:
+	def on_commit_to_main(self, commit_hash: str) -> None | ReleaseInfo:
 		pr = self.backend.get_commit_associated_pr(commit_hash)
 		bucket_key = f"{self.plugin_name()}-pending-changes"
 		match res := self._parse_pr(pr.pr_number):
@@ -127,8 +130,6 @@ class DeferredReleasePlugin(CiBotPlugin):
 
 			case ReleasePrDesc():
 				return ReleaseInfo(note=self._get_release_repr(res))
-
-
 
 	def _parse_pr(self, pr_id: int) -> ChangeNote | ReleasePrDesc | None:
 		pr_description = self.backend.get_pr_description(pr_id)

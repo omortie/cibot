@@ -72,7 +72,6 @@ def get_backend(pr_number: int | None) -> CiBotBackendBase:
 PLUGINS_REGISTRY = {
 	"deferred_release": DeferredReleasePlugin,
 	"semver": SemverPlugin,
-
 }
 
 
@@ -133,7 +132,6 @@ class PluginRunner:
 			git_changes = itertools.chain(
 				plugin.prepare_release(release_type, next_version) for plugin in self.plugins
 			)
-
 
 			if list(git_changes):
 				for change in git_changes:

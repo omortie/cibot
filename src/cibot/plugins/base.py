@@ -18,6 +18,7 @@ class BumpType(enum.Enum):
 	MAJOR = "major"
 	PATCH = "patch"
 
+
 @dataclass
 class ReleaseInfo:
 	note: str
@@ -31,8 +32,8 @@ class CiBotPlugin(ABC):
 		self.storage = storage
 		self._pr_comment: str | None = None
 		self._should_fail_work_flow = False
-		if backend.name() != "*" or backend.name() not in self.supported_backednds:
-			raise ValueError(f"Backend {backend.name} is not supported by this plugin")
+		if "*" not in self.supported_backednds and backend.name() not in self.supported_backednds:
+			raise ValueError(f"Backend {backend.name()} is not supported by this plugin")
 
 	def on_pr_changed(self, pr: int) -> BumpType | None:
 		return None
@@ -42,7 +43,6 @@ class CiBotPlugin(ABC):
 
 	def prepare_release(self, release_type: BumpType, next_version: str) -> list[Path]:
 		return []
-
 
 	@abstractmethod
 	def plugin_name(self) -> str: ...
