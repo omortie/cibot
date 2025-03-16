@@ -41,7 +41,6 @@ class GithubBackend(CiBotBackendBase):
 		self.git("config", "user.name", "cibot")
 		self.git("config", "user.email", "cibot@no.reply")
 		assert self.settings.TOKEN, "TOKEN is not set"
-		self.run_cmd("gh", "auth", "login", "--with-token", self.settings.TOKEN)
 		self.git(
 			"remote",
 			"set-url",
