@@ -3,7 +3,8 @@ from pathlib import Path
 from typing import override
 
 from packaging.version import Version
-from src.cibot.plugins.base import BumpType, VersionBumpPlugin
+
+from cibot.plugins.base import BumpType, VersionBumpPlugin
 
 SEMVER_REGEX = re.compile(r"(\d+)\.(\d+)\.(\d+)")
 
