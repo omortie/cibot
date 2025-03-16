@@ -31,7 +31,7 @@ class CiBotPlugin(ABC):
 		self.storage = storage
 		self._pr_comment: str | None = None
 		self._should_fail_work_flow = False
-		if backend.name() not in self.supported_backednds and backend.name() != "*":
+		if backend.name() != "*" or backend.name() not in self.supported_backednds:
 			raise ValueError(f"Backend {backend.name} is not supported by this plugin")
 
 	def on_pr_changed(self, pr: int) -> BumpType | None:
