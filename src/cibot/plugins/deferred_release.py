@@ -1,5 +1,7 @@
 import datetime
 import enum
+import json
+from ntpath import exists
 import textwrap
 from collections import defaultdict
 from pathlib import Path
@@ -91,16 +93,21 @@ class DeferredReleasePlugin(CiBotPlugin):
 
 	@override
 	def prepare_release(self, release_type: BumpType, next_version: str) -> list[Path]:
-		changelog_file = Path.cwd() / "CHANGELOG.md"
-
+		changelog_readable = Path.cwd() / "CHANGELOG.md"
+		changelog_json = Path.cwd() / "CHANGELOG.json"
+		if not changelog_json.exists():
+			changelog_json.write_text("{}", encoding="utf-8")
+		if not changelog_readable.exists():
+			changelog_readable.write_text("", encoding="utf-8")
+			
 		def update_change_log(current_changes: str, version: str) -> None:
 			main_header = "CHANGELOG\n=========\n"
 
 			this_header = textwrap.dedent(
 				f"""{version} - {datetime.datetime.now(tz=datetime.UTC).date().isoformat()}\n--------------------\n""",
 			)
-			previous = changelog_file.read_text(encoding="utf-8").strip(main_header)
-			changelog_file.write_text(
+			previous = changelog_readable.read_text(encoding="utf-8").strip(main_header)
+			changelog_readable.write_text(
 				textwrap.dedent(
 					f"{main_header}{this_header}{current_changes}\n\n{previous}\n",
 				),
@@ -111,7 +118,11 @@ class DeferredReleasePlugin(CiBotPlugin):
 			update_change_log(
 				self._get_release_repr(self._release_desc, next_version), next_version
 			)
-			return [changelog_file]
+			existing_changes_json = json.loads(changelog_json.read_text(encoding="utf-8"))
+			existing_changes_json[next_version] = json.loads(
+				msgspec.to_builtins(self._release_desc)
+			) 
+			return [changelog_readable, changelog_json]
 		return []
 
 	@override
