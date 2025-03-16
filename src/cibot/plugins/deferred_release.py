@@ -11,7 +11,6 @@ from loguru import logger
 
 from cibot.backends.base import ERROR_GIF, PrDescription
 from cibot.plugins.base import BumpType, CiBotPlugin, ReleaseInfo
-from cibot.settings import GithubSettings
 
 
 class ChangeType(enum.Enum):
@@ -211,6 +210,7 @@ class DeferredReleasePlugin(CiBotPlugin):
 
 	def _get_release_repr(self, release: ReleasePrDesc, version: str | None = None) -> str:
 		def repr_change_note_suffix(change_note: ChangeNote) -> str:
+			from cibot.backends.github_backend import GithubSettings
 			settings = GithubSettings()
 			return (
 				f"Contributed by [{change_note.contributor.pr_author_fullname or change_note.contributor.pr_author_fullname}]"
