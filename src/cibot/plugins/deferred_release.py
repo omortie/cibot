@@ -73,7 +73,7 @@ class DeferredReleasePlugin(CiBotPlugin):
 		return "Deferred Release"
 
 	@override
-	def on_pr_changed(self, pr) -> None:
+	def on_pr_changed(self, pr) -> None | BumpType:
 		match note := self._parse_pr(pr):
 			case ChangeNote():
 				self._pr_comment = textwrap.dedent(
@@ -87,7 +87,7 @@ class DeferredReleasePlugin(CiBotPlugin):
 			case ReleasePrDesc():
 				self._release_desc = note
 				self._pr_comment = self._get_release_repr(note)
-
+				return note.release_type
 	@override
 	def prepare_release(self, release_type: BumpType, next_version: str) -> list[Path]:
 		changelog_file = Path.cwd() / "CHANGELOG.md"
