@@ -33,3 +33,18 @@ typeCheckingMode = "standard"
 
 [dependency-groups]
 dev = ["ruff>=0.9.10"]
+
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+fix = true
+src = [ "src", "tests",]
+
+[tool.ruff.lint]
+ignore = [ "TC001", "A005", "TID252", "E501", "S101", "S102", "S104", "S324", "EXE002", "D100", "D102", "D203", "D206", "D103", "D104", "D105", "D106", "D101", "D107", "D212", "D211", "PGH003", "PGH004", "N811", "N804", "N818", "N806", "N815", "ARG001", "ARG002", "DTZ003", "DTZ005", "RSE102", "SLF001", "PLR", "INP", "TRY", "SIM300", "SIM114", "DJ008", "FIX002", "S603", "S607", "TD002", "TD003", "W191", "COM812", "ISC001",]
+select = [ "ALL",]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "tab"

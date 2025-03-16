@@ -3,12 +3,12 @@ import msgspec
 
 
 class Foo(msgspec.Struct):
-    a: int
-    b: str
+	a: int
+	b: str
 
 
 class Bar(msgspec.Struct):
-    baz: str
+	baz: str
 
 
 baz_builtins = msgspec.to_builtins(Bar(baz="hello"))
