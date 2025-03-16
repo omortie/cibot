@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 import enum
 from pathlib import Path
 from typing import AbstractSet, ClassVar
@@ -12,11 +13,15 @@ class ShouldRelease(enum.Enum):
 	ABSTAIN = "abstain"
 
 
-class ReleaseType(enum.Enum):
+class BumpType(enum.Enum):
 	MINOR = "minor"
 	MAJOR = "major"
 	PATCH = "patch"
 
+@dataclass
+class ReleaseInfo:
+	note: str
+	
 
 class CiBotPlugin(ABC):
 	supported_backednds: ClassVar[tuple[str, ...]]
@@ -28,16 +33,15 @@ class CiBotPlugin(ABC):
 		if backend.name() not in self.supported_backednds:
 			raise ValueError(f"Backend {backend.name} is not supported by this plugin")
 
-	def on_pr_changed(self, pr: int) -> ReleaseType | None:
+	def on_pr_changed(self, pr: int) -> BumpType | None:
 		return None
 
-	def on_commit_to_main(self, commit_hash: str) -> None:
+	def on_commit_to_main(self, commit_hash: str) -> None | ReleaseInfo:
 		return None
 
-	def prepare_release(self, release_type: ReleaseType, next_version: str) -> list[Path]:
+	def prepare_release(self, release_type: BumpType, next_version: str) -> list[Path]:
 		return []
 
-	def release(self, release_type: ReleaseType) -> None: ...
 
 	@abstractmethod
 	def plugin_name(self) -> str: ...
@@ -58,5 +62,5 @@ class CiBotPlugin(ABC):
 
 class VersionBumpPlugin(CiBotPlugin):
 	@abstractmethod
-	def next_version(self, bump_type: ReleaseType) -> str:
+	def next_version(self, bump_type: BumpType) -> str:
 		raise NotImplementedError("Subclasses must implement this method")

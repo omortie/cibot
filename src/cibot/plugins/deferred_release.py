@@ -1,12 +1,16 @@
 from collections import defaultdict
+import datetime
 import enum
+from functools import update_wrapper
+from pathlib import Path
 import textwrap
+from turtle import update
 from typing import ClassVar, override
 
 from loguru import logger
 import msgspec
 from cibot.backends.base import ERROR_GIF, PrDescription
-from cibot.plugins.base import CiBotPlugin, ReleaseType
+from cibot.plugins.base import CiBotPlugin, BumpType, ReleaseInfo
 from cibot.settings import GithubSettings
 
 
@@ -23,7 +27,7 @@ class ChangeNote(PrDescription):
 
 
 class ReleasePrDesc(PrDescription):
-	release_type: ReleaseType
+	release_type: BumpType
 	changes: dict[int, ChangeNote]
 
 
@@ -60,7 +64,11 @@ class DeferredReleasePlugin(CiBotPlugin):
 	"""
 
 	supported_backednds: ClassVar[tuple[str, ...]] = ("github",)
-
+	
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self._release_desc: ReleasePrDesc | None = None
+	
 	@override
 	def plugin_name(self) -> str:
 		return "Deferred Release"
@@ -78,14 +86,36 @@ class DeferredReleasePlugin(CiBotPlugin):
                     """
 				)
 			case ReleasePrDesc():
+				self._release_desc = note
 				self._pr_comment = self._get_release_repr(note)
+		
+	@override
+	def prepare_release(self, release_type: BumpType, next_version: str) -> list[Path]:
+		changelog_file = Path.cwd() / "CHANGELOG.md"
+		def update_change_log(current_changes: str, version: str) -> None:
+			main_header = "CHANGELOG\n=========\n"
 
+			this_header = textwrap.dedent(
+				f"""{version} - {datetime.datetime.now(tz=datetime.UTC).date().isoformat()}\n--------------------\n""",
+			)
+			previous = changelog_file.read_text(encoding="utf-8").strip(main_header)
+			changelog_file.write_text(
+				textwrap.dedent(
+					f"{main_header}{this_header}{current_changes}\n\n{previous}\n",
+				),
+				encoding="utf-8",
+			)
+		if self._release_desc:
+			update_change_log(self._get_release_repr(self._release_desc, next_version), next_version)
+			return [changelog_file]
+		return []
+		
 	@override
 	def provide_comment_for_pr(self):
 		return self._pr_comment
 
 	@override
-	def on_commit_to_main(self, commit_hash: str) -> ReleaseType | None:
+	def on_commit_to_main(self, commit_hash: str) ->  None | ReleaseInfo:
 		pr = self.backend.get_commit_associated_pr(commit_hash)
 		bucket_key = f"{self.plugin_name()}-pending-changes"
 		match res := self._parse_pr(pr.pr_number):
@@ -99,9 +129,10 @@ class DeferredReleasePlugin(CiBotPlugin):
 				)
 
 			case ReleasePrDesc():
-				self._release_repr = self._get_release_repr(res)
-				return res.release_type
+				return ReleaseInfo(note=self._get_release_repr(res))
+	
 
+	
 	def _parse_pr(self, pr_id: int) -> ChangeNote | ReleasePrDesc | None:
 		pr_description = self.backend.get_pr_description(pr_id)
 		if release := self._get_release_desc_for_pr(pr_description):
@@ -138,11 +169,11 @@ class DeferredReleasePlugin(CiBotPlugin):
 		self._should_fail_work_flow = True
 
 	def _get_release_desc_for_pr(self, pr_description: PrDescription) -> ReleasePrDesc | None:
-		def find_release_type(label: str) -> ReleaseType | None:
+		def find_release_type(label: str) -> BumpType | None:
 			lower = label.lower()
 			if "release" not in lower:
 				return None
-			for release_type in ReleaseType:
+			for release_type in BumpType:
 				if release_type.value.lower() in lower:
 					return release_type
 			return None
@@ -171,7 +202,7 @@ class DeferredReleasePlugin(CiBotPlugin):
 				changes=changes.notes,
 			)
 
-	def _get_release_repr(self, release: ReleasePrDesc) -> str:
+	def _get_release_repr(self, release: ReleasePrDesc, version: str | None = None) -> str:
 		def repr_change_note_suffix(change_note: ChangeNote) -> str:
 			settings = GithubSettings()
 			return (
@@ -184,7 +215,7 @@ class DeferredReleasePlugin(CiBotPlugin):
 		for change in release.changes.values():
 			changelogs_by_type[change.change_type].append(change)
 
-		comment = f"### Release: {release.release_type.value}\n"
+		comment = f"### Release: {version or release.release_type.value}\n"
 		comment += "#### Changes\n"
 		for change_type, changes in changelogs_by_type.items():
 			comment += f"##### {change_type.value}(es)\n"
