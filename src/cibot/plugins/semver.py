@@ -30,6 +30,8 @@ def bumped_version(bump_type: BumpType, version_raw: str) -> str:
 
 
 class SemverPlugin(VersionBumpPlugin):
+	
+	supported_backends = ("*",)
 	@override
 	def plugin_name(self) -> str:
 		return "semver"
