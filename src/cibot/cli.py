@@ -93,10 +93,10 @@ class ReleasePrMarker(msgspec.Struct):
 	"""Mark a release PR workflow as already ran"""
 
 	pr: int
-	version: str
+	bump_type: str
 
 	def as_key(self) -> str:
-		return f"release-pr-{self.pr}-{self.version}"
+		return f"release-pr-{self.pr}-{self.bump_type}"
 
 
 class PluginRunner:
@@ -117,15 +117,12 @@ class PluginRunner:
 
 		if release_type := next((res for res in results if res is not None), None):
 			# find plugin for release_type
-			if not (
-				version_bump_plugin := next(
+			version_bump_plugin = next(
 					plugin for plugin in self.plugins if isinstance(plugin, VersionBumpPlugin)
 				)
-			):
-				logger.error("no plugin found for version bump")
 			logger.info(f"Found version bump plugin: {version_bump_plugin.plugin_name()}")
 			next_version = version_bump_plugin.next_version(release_type)
-			release_marker = ReleasePrMarker(pr, next_version)
+			release_marker = ReleasePrMarker(pr, bump_type=release_type.name)
 			if self.storage.get(release_marker.as_key(), ReleasePrMarker):
 				logger.info(f"Release workflow for PR #{pr} already ran")
 				return

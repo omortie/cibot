@@ -40,7 +40,7 @@ class SemverPlugin(VersionBumpPlugin):
 	def next_version(self, bump_type: BumpType) -> str:
 		current_version = self._current_version_from_pyproject()
 		new_version = bumped_version(bump_type, current_version)
-		self._pr_comment = f"Bumping version to {new_version}. Bump type: {bump_type}."
+		self._pr_comment = f"Bumping version to {new_version}. Bump type: {bump_type.value}."
 		return new_version
 
 	@override

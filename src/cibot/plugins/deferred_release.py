@@ -118,7 +118,7 @@ class DeferredReleasePlugin(CiBotPlugin):
 			)
 			existing_changes_json = json.loads(changelog_json.read_text(encoding="utf-8"))
 			existing_changes_json[next_version] = msgspec.to_builtins(self._release_desc)
-			changelog_json.write_text(json.dumps(existing_changes_json), encoding="utf-8")
+			changelog_json.write_text(json.dumps(existing_changes_json, indent=2), encoding="utf-8")
 			return [changelog_readable, changelog_json]
 		return []
 

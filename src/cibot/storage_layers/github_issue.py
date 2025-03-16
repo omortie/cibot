@@ -31,12 +31,12 @@ class GithubIssueStorage(BaseStorage):
 
 	def get_json_part_from_comment(self) -> Bucket | None:
 		body = self.issue.body
-		logger.info(f"Checking issue body: {body}")
 		if body:
 			body = body.split("```json")[1].split("```")[0].strip()
 			return msgspec.json.decode(body, type=Bucket)
 
 	def get[T](self, key: str, type_: type[T]) -> T | None:
+		logger.info(f"Getting key {key}")
 		if bucket := self.get_json_part_from_comment():
 			if exists := bucket.plugin_srorage.get(key, None):
 				return msgspec.json.decode(exists, type=type_)
