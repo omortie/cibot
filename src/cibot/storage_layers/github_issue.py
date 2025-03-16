@@ -38,7 +38,8 @@ class GithubIssueStorage(BaseStorage):
 
 	def get[T](self, key: str, type_: type[T]) -> T | None:
 		if bucket := self.get_json_part_from_comment():
-			return msgspec.json.decode(bucket.plugin_srorage[key], type=type_)
+			if exists := bucket.plugin_srorage.get(key, None):
+				return msgspec.json.decode(exists, type=type_)
 		return None
 
 	def set(self, key: str, value: msgspec.Struct) -> None:
