@@ -5,14 +5,15 @@ import re
 import textwrap
 from collections import defaultdict
 from pathlib import Path
+from termios import VERASE
 from typing import ClassVar, override
 
 import msgspec
 from loguru import logger
-
-from cibot.backends.base import ERROR_GIF, PrDescription
-from cibot.plugins.base import BumpType, CiBotPlugin, ReleaseInfo
 from pydantic_settings import BaseSettings
+
+from cibot.backends.base import ERROR_GIF, PrDescription, ReleaseInfo
+from cibot.plugins.base import BumpType, CiBotPlugin
 
 
 class ChangeType(enum.Enum):
@@ -35,8 +36,10 @@ class ReleasePrDesc(PrDescription):
 class ReleaseNoteBucket(msgspec.Struct):
 	notes: dict[int, ChangeNote]
 
+
 class PendingRelease(ReleasePrDesc):
 	version: str
+
 
 class DefferedReleaseSettings(BaseSettings):
 	model_config = {
@@ -91,7 +94,7 @@ class DeferredReleasePlugin(CiBotPlugin):
 					f"""
                     ### {note.header}
                     Change Type: {note.change_type.value}
-                    Description:  
+                    Description:
                     {note.description}
                     """
 				)
@@ -131,16 +134,18 @@ class DeferredReleasePlugin(CiBotPlugin):
 			existing_changes_json[next_version] = msgspec.to_builtins(self._release_desc)
 			changelog_json.write_text(json.dumps(existing_changes_json, indent=2), encoding="utf-8")
 			pr = self._release_desc.pr_number
-			self.storage.set(f"{self.plugin_name()}-pending-release-{pr}", PendingRelease(
-				version=next_version,
-				release_type=self._release_desc.release_type,
-				changes=self._release_desc.changes,
-				contributor=self._release_desc.contributor,
-				description=self._release_desc.description,
-				header=self._release_desc.header,
-				pr_number=pr,
-				
-			))
+			self.storage.set(
+				f"{self.plugin_name()}-pending-release-{pr}",
+				PendingRelease(
+					version=next_version,
+					release_type=self._release_desc.release_type,
+					changes=self._release_desc.changes,
+					contributor=self._release_desc.contributor,
+					description=self._release_desc.description,
+					header=self._release_desc.header,
+					pr_number=pr,
+				),
+			)
 			return [changelog_readable, changelog_json]
 		return []
 
@@ -162,10 +167,16 @@ class DeferredReleasePlugin(CiBotPlugin):
 				settings = DefferedReleaseSettings()
 				# wipe pending changes
 				self.storage.delete(pending_changes_key)
-				res = self.storage.get(f"{self.plugin_name()}-pending-release-{pr.pr_number}", PendingRelease)
+				res = self.storage.get(
+					f"{self.plugin_name()}-pending-release-{pr.pr_number}", PendingRelease
+				)
 				self.storage.delete(f"{self.plugin_name()}-pending-release-{pr.pr_number}")
 				assert res, f"Pending release not found for PR {pr.pr_number}"
-				return ReleaseInfo(note=self._get_release_repr(res), header=f"{settings.PROJECT_NAME} {res.version}")
+				return ReleaseInfo(
+					version=res.version,
+					note=self._get_release_repr(res),
+					header=f"{settings.PROJECT_NAME} {res.version}",
+				)
 
 	def _parse_pr(self, pr_id: int) -> ChangeNote | ReleasePrDesc | None:
 		pr_description = self.backend.get_pr_description(pr_id)
@@ -239,6 +250,7 @@ class DeferredReleasePlugin(CiBotPlugin):
 	def _get_release_repr(self, release: ReleasePrDesc, version: str | None = None) -> str:
 		def repr_change_note_suffix(change_note: ChangeNote) -> str:
 			from cibot.backends.github_backend import GithubSettings
+
 			settings = GithubSettings()
 			return (
 				f"Contributed by [{change_note.contributor.pr_author_fullname or change_note.contributor.pr_author_fullname}]"

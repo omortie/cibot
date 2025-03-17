@@ -20,11 +20,6 @@ class BumpType(enum.Enum):
 	PATCH = "patch"
 
 
-@dataclass
-class ReleaseInfo:
-	header: str
-	note: str
-
 
 class CiBotPlugin(ABC):
 	supported_backednds: ClassVar[tuple[str, ...]]

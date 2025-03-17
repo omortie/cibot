@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import subprocess
 from abc import ABC, abstractmethod
 
@@ -12,6 +13,12 @@ class PRContributor(Struct):
 	pr_author_fullname: str | None
 
 
+@dataclass
+class ReleaseInfo:
+	header: str
+	note: str
+	version: str
+	
 ERROR_GIF = "![](https://media1.tenor.com/m/FOzbM2mVKG0AAAAC/error-windows-xp.gif)"
 
 
@@ -33,7 +40,7 @@ class CiBotBackendBase(ABC):
 	def create_pr_comment(self, content: str) -> None: ...
 
 	@abstractmethod
-	def publish_release(self, project_name: str, version: str) -> None: ...
+	def publish_release(self, release_info: ReleaseInfo) -> None: ...
 	
 	def run_cmd(self, *args: str) -> None:
 		return subprocess.run([*args], check=False).check_returncode()

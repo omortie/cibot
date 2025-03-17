@@ -3,9 +3,11 @@ from typing import ClassVar, override
 import github
 import github.PullRequest
 from github.Repository import Repository
+from loguru import logger
 from pydantic_settings import BaseSettings
+from pygments.util import tag_re
 
-from cibot.backends.base import CiBotBackendBase, PRContributor, PrDescription
+from cibot.backends.base import CiBotBackendBase, PRContributor, PrDescription, ReleaseInfo
 from cibot.storage_layers.base import BaseStorage
 
 
@@ -41,7 +43,6 @@ class GithubBackend(CiBotBackendBase):
 		self.git("config", "user.name", "cibot")
 		self.git("config", "user.email", "cibot@no.reply")
 
-
 	@override
 	def create_pr_comment(self, content: str) -> None:
 		if not self.pr_number:
@@ -54,8 +55,14 @@ class GithubBackend(CiBotBackendBase):
 		)
 
 	@override
-	def publish_release(self, project_name, version):
-		raise NotImplementedError
+	def publish_release(self, release_info: ReleaseInfo):
+		release = self.repo.create_git_release(
+			name=release_info.header,
+			tag=release_info.version,
+			generate_release_notes=False,
+			message=release_info.note,
+		)
+		logger.info(f"Published release {release_info.version} at {release.html_url}")
 
 	@override
 	def get_pr_description(self, pr_number):

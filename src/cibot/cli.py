@@ -145,10 +145,9 @@ class PluginRunner:
 	def on_commit_to_main(self):
 		
 		release_infos = [plugin.on_commit_to_main(self.backend.get_current_commit_hash()) for plugin in self.plugins]
-		for release_info in release_infos:
-			if release_info:
-				self.backend.git("tag", release_info.tag)
-				self.backend.git("push", "--tags")
+		release_info = next((info for info in release_infos if info), None)
+		if release_info:
+			self.backend.publish_release(release_info)
 		self.check_for_errors()
 
 	def check_for_errors(self):
