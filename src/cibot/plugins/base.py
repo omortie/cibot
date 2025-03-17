@@ -40,7 +40,7 @@ class CiBotPlugin(ABC):
 	def on_pr_changed(self, pr: int) -> BumpType | None:
 		return None
 
-	def on_commit_to_main(self, commit_hash: str, new_version: str | None) -> None | ReleaseInfo:
+	def on_commit_to_main(self, commit_hash: str) -> None | ReleaseInfo:
 		return None
 
 	def prepare_release(self, release_type: BumpType, next_version: str) -> list[Path]:

@@ -1,6 +1,7 @@
 import datetime
 import enum
 import json
+import re
 import textwrap
 from collections import defaultdict
 from pathlib import Path
@@ -33,6 +34,9 @@ class ReleasePrDesc(PrDescription):
 
 class ReleaseNoteBucket(msgspec.Struct):
 	notes: dict[int, ChangeNote]
+
+class PendingRelease(ReleasePrDesc):
+	version: str
 
 class DefferedReleaseSettings(BaseSettings):
 	model_config = {
@@ -126,11 +130,22 @@ class DeferredReleasePlugin(CiBotPlugin):
 			existing_changes_json = json.loads(changelog_json.read_text(encoding="utf-8"))
 			existing_changes_json[next_version] = msgspec.to_builtins(self._release_desc)
 			changelog_json.write_text(json.dumps(existing_changes_json, indent=2), encoding="utf-8")
+			pr = self._release_desc.pr_number
+			self.storage.set(f"{self.plugin_name()}-pending-release-{pr}", PendingRelease(
+				version=next_version,
+				release_type=self._release_desc.release_type,
+				changes=self._release_desc.changes,
+				contributor=self._release_desc.contributor,
+				description=self._release_desc.description,
+				header=self._release_desc.header,
+				pr_number=pr,
+				
+			))
 			return [changelog_readable, changelog_json]
 		return []
 
 	@override
-	def on_commit_to_main(self, commit_hash: str, new_version: str | None) -> None | ReleaseInfo:
+	def on_commit_to_main(self, commit_hash: str) -> None | ReleaseInfo:
 		pr = self.backend.get_commit_associated_pr(commit_hash)
 		pending_changes_key = f"{self.plugin_name()}-pending-changes"
 		match res := self._parse_pr(pr.pr_number):
@@ -147,7 +162,9 @@ class DeferredReleasePlugin(CiBotPlugin):
 				settings = DefferedReleaseSettings()
 				# wipe pending changes
 				self.storage.delete(pending_changes_key)
-				return ReleaseInfo(note=self._get_release_repr(res), header=f"{settings.PROJECT_NAME} {new_version}")
+				res = self.storage.get(f"{self.plugin_name()}-pending-release-{pr.pr_number}", PendingRelease)
+				assert res, f"Pending release not found for PR {pr.pr_number}"
+				return ReleaseInfo(note=self._get_release_repr(res), header=f"{settings.PROJECT_NAME} {res.version}")
 
 	def _parse_pr(self, pr_id: int) -> ChangeNote | ReleasePrDesc | None:
 		pr_description = self.backend.get_pr_description(pr_id)
