@@ -162,7 +162,8 @@ class PluginRunner:
 		}
 		content = ""
 		for plugin_name, comment in plugin_comments.items():
-			content += f"### {plugin_name}\n{comment}\n___\n"
+			if comment:
+				content += f"### {plugin_name}\n{comment}\n___\n"
 		self.backend.create_pr_comment(content)
 
 
