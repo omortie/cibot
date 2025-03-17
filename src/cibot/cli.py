@@ -140,7 +140,7 @@ class PluginRunner:
 				
 			self.check_for_errors()
 			self.storage.set(release_marker.as_key(), release_marker)
-			self.comment_on_pr(pr)
+		self.comment_on_pr(pr)
 
 	def on_commit_to_main(self):
 		
