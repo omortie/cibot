@@ -1,10 +1,7 @@
 import datetime
 import os
-import subprocess
 import textwrap
-from dataclasses import dataclass
 
-import httpx
 import toml as tomllib
 from loguru import logger
 from packaging.version import Version
@@ -12,19 +9,6 @@ from packaging.version import Version
 from . import githubref
 from .releasefile import ReleasePreview, parse_release_file
 from .utils import PATHS
-
-
-git_username = "cibot"
-git_email = "bot@no.reply"
-
-
-def git(*args: str) -> None:
-	return subprocess.run(["git", *args], check=False).check_returncode()
-
-
-def configure_git(username: str, email: str) -> None:
-	git("config", "user.name", username)
-	git("config", "user.email", email)
 
 
 def get_current_version() -> str:

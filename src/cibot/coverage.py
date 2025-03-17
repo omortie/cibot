@@ -74,7 +74,8 @@ class ProgrammaticDiffCover:
 			markdown_gen.generate_report(buffer)
 			markdown_string = buffer.getvalue().decode("utf-8").replace("# Diff Coverage", "")
 			return markdown_string.replace(
-				"## Diff: origin/main...HEAD, staged, unstaged and untracked changes", ""
+				"## Diff: origin/main...HEAD, staged, unstaged and untracked changes",
+				"",
 			)
 
 
