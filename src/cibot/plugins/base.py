@@ -5,7 +5,7 @@ from pathlib import Path
 from re import S
 from typing import ClassVar
 
-from cibot.backends.base import CiBotBackendBase
+from cibot.backends.base import CiBotBackendBase, ReleaseInfo
 from cibot.storage_layers.base import BaseStorage
 
 
