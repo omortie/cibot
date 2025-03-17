@@ -163,6 +163,7 @@ class DeferredReleasePlugin(CiBotPlugin):
 				# wipe pending changes
 				self.storage.delete(pending_changes_key)
 				res = self.storage.get(f"{self.plugin_name()}-pending-release-{pr.pr_number}", PendingRelease)
+				self.storage.delete(f"{self.plugin_name()}-pending-release-{pr.pr_number}")
 				assert res, f"Pending release not found for PR {pr.pr_number}"
 				return ReleaseInfo(note=self._get_release_repr(res), header=f"{settings.PROJECT_NAME} {res.version}")
 
