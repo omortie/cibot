@@ -1,9 +1,6 @@
 import enum
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from pathlib import Path
-from re import S
-from typing import ClassVar
 
 from cibot.backends.base import CiBotBackendBase, ReleaseInfo
 from cibot.storage_layers.base import BaseStorage
@@ -20,16 +17,13 @@ class BumpType(enum.Enum):
 	PATCH = "patch"
 
 
-
 class CiBotPlugin(ABC):
-	supported_backednds: ClassVar[tuple[str, ...]]
-
 	def __init__(self, backend: CiBotBackendBase, storage: BaseStorage) -> None:
 		self.backend = backend
 		self.storage = storage
 		self._pr_comment: str | None = None
 		self._should_fail_work_flow = False
-		if "*" not in self.supported_backednds and backend.name() not in self.supported_backednds:
+		if "*" not in self.supported_backends() and backend.name() not in self.supported_backends():
 			raise ValueError(f"Backend {backend.name()} is not supported by this plugin")
 
 	def on_pr_changed(self, pr: int) -> BumpType | None:
@@ -44,13 +38,21 @@ class CiBotPlugin(ABC):
 	@abstractmethod
 	def plugin_name(self) -> str: ...
 
-	def provide_comment_for_pr(self) -> str | None:
+	@abstractmethod
+	def supported_backends(self) -> tuple[str, ...]: ...
+
+	def pr_comment_id(self) -> str:
+		return f"popo kaka baba jojo {self.plugin_name()}"
+
+	def provide_comment_for_pr(self) -> tuple[str, str] | None:
 		"""
 		Get the comment from the PR description.
 
 		this would be used in conjunction with the plugin name in the bot comment.
 		"""
-		return self._pr_comment
+		if self._pr_comment:
+			return self._pr_comment, self.pr_comment_id()
+		return None
 
 	def should_fail_workflow(self) -> bool:
 		"""

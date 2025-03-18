@@ -1,12 +1,10 @@
 import datetime
 import enum
 import json
-import re
 import textwrap
 from collections import defaultdict
 from pathlib import Path
-from termios import VERASE
-from typing import ClassVar, override
+from typing import override
 
 import msgspec
 from loguru import logger
@@ -76,8 +74,6 @@ class DeferredReleasePlugin(CiBotPlugin):
 	```
 	"""
 
-	supported_backednds: ClassVar[tuple[str, ...]] = ("github",)
-
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self._release_desc: ReleasePrDesc | None = None
@@ -86,18 +82,20 @@ class DeferredReleasePlugin(CiBotPlugin):
 	def plugin_name(self) -> str:
 		return "Deferred Release"
 
+	def supported_backends(self) -> tuple[str, ...]:
+		return ("github",)
+
 	@override
 	def on_pr_changed(self, pr) -> None | BumpType:
 		match note := self._parse_pr(pr):
 			case ChangeNote():
-				self._pr_comment = textwrap.dedent(
-					f"""
-                    ### {note.header}
-                    Change Type: {note.change_type.value}
-                    Description:
-                    {note.description}
-                    """
-				)
+				self._pr_comment = f"""
+### {note.header}
+Change Type: {note.change_type.value}
+Description:
+
+{note.description}
+"""
 			case ReleasePrDesc():
 				self._release_desc = note
 				self._pr_comment = self._get_release_repr(note)

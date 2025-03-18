@@ -2,7 +2,7 @@
 {% for section in sections %}
 <details>
     <summary>
-        <h2 style="margin: 0;">{{ section.name }}</h2>
+        <h3 style="margin: 0;">{{ section.name }}</h3>
     </summary>
     <div>{{ section.content }}</div>
 </details>

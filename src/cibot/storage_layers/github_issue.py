@@ -19,7 +19,8 @@ class Settings(BaseSettings):
 
 class Bucket(msgspec.Struct):
 	plugin_srorage: dict[str, str]
-	
+
+
 COMMENT_BASE = """
 ### CIBot Storage Layer
 ### Do not edit this comment
@@ -40,8 +41,7 @@ class GithubIssueStorage(BaseStorage):
 		self.issue = issue
 
 	def get_json_part_from_comment(self) -> Bucket | None:
-		body = self.issue.body
-		if body:
+		if body := self.issue.body:
 			body = body.split("```json")[1].split("```")[0].strip()
 			return msgspec.json.decode(body, type=Bucket)
 
@@ -65,6 +65,7 @@ class GithubIssueStorage(BaseStorage):
 				json.dumps(msgspec.to_builtins(Bucket(plugin_srorage={key: raw})), indent=2)
 			)
 		self.issue.edit(body=textwrap.dedent(new_comment))
+
 	@override
 	def delete(self, key: str) -> None:
 		if bucket := self.get_json_part_from_comment():
