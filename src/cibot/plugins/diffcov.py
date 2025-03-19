@@ -70,6 +70,14 @@ class DiffCovPlugin(CiBotPlugin):
 		else:
 			cov_files = [Path.cwd() / "coverage.xml"]
 
+		if not cov_files:
+			logger.error("No coverage files found")
+			self._pr_comment = (
+				f"{self._pr_comment or ''}\n#### 🔴 No coverage files found"
+			)
+			self._should_fail_work_flow = True
+			return None
+
 		grouped_lines_per_file: dict[str, list[tuple[int, int | None]]] = {}
 		fail_under_lints: dict[str, str] = {}
 		for cov_file in cov_files:
