@@ -43,8 +43,6 @@ class DiffCovSettings(BaseSettings):
 		"env_prefix": "DIFF_COV_",
 	}
 	COMPARE_BRANCH: str = "main"
-	RECURSIVE: bool = True
-	"""Find coverage files recursively"""
 	FAIL_UNDER: float = 100.0
 
 
@@ -65,10 +63,9 @@ class DiffCovPlugin(CiBotPlugin):
 	def on_pr_changed(self, pr: int) -> BumpType | None:
 		settings = self.settings
 		cov_files = []
-		if settings.RECURSIVE:
-			cov_files = list(Path.cwd().rglob("coverage.xml"))
-		else:
-			cov_files = [Path.cwd() / "coverage.xml"]
+		cov_files = list(Path.cwd().rglob("coverage.xml"))
+		cov_files.extend(list(Path.cwd().rglob("lcov.info")))
+
 
 		grouped_lines_per_file: dict[str, list[tuple[int, int | None]]] = {}
 		fail_under_lints: dict[str, str] = {}
