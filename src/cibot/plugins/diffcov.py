@@ -83,7 +83,7 @@ class DiffCovPlugin(CiBotPlugin):
 			if report["total_percent_covered"] < settings.FAIL_UNDER:
 				logger.error(f"Coverage failed under {settings.FAIL_UNDER}%")
 				self._pr_comment = (
-					f"{self._pr_comment or ''}\n#### 🔴 Coverage failed for {section_name} section\n"
+					f"{self._pr_comment or ''}\n#### 🔴 Coverage failed for {section_name}\n"  # noqa: ISC003
 					+ f"expected {settings.FAIL_UNDER}% got {report['total_percent_covered']}"
 				)
 				self._should_fail_work_flow = True
@@ -100,7 +100,7 @@ class DiffCovPlugin(CiBotPlugin):
 				start_line, end_line = violation
 				self.backend.create_pr_review_comment(
 					PrReviewComment(
-						content=f"⛔ Missing coverage from line {start_line} to line {end_line}"
+						content=f"⛔ Missing coverage from line {start_line} to line {end_line}"  # noqa: ISC003
 						+ "\n<sup>**Don't comment here, it will be deleted**</sup>",
 						content_id=DIFF_COV_REVIEW_COMMENT_ID,
 						start_line=start_line if end_line != start_line else None,
@@ -109,11 +109,10 @@ class DiffCovPlugin(CiBotPlugin):
 						pr_number=pr,
 					)
 				)
-		
-		if not self._should_fail_work_flow:
-			self._pr_comment = f"### ✅ Coverage passed"
 
-			
+		if not self._should_fail_work_flow:
+			self._pr_comment = "### ✅ Coverage passed"
+
 	def _group_violations(self, violation_lines: list[int]) -> list[tuple[int, int | None]]:
 		"""
 		Return a list of tuples that are basically ranges of serially increasing numbers.
@@ -159,9 +158,8 @@ class Report(TypedDict):
 
 
 def create_report_for_cov_file(cov_file: Path, compare_branch: str) -> Report:
-	cmd = f"diff-cover coverage.xml --compare-branch={compare_branch} --json-report report.json"
-	if subprocess.run(cmd, shell=True, check=False).returncode != 0:
-		raise ValueError("Failed to generate coverage report")
+	cmd = f"diff-cover {cov_file!s} --compare-branch={compare_branch} --json-report report.json"
+	subprocess.run(cmd, shell=True, check=True)  # noqa: S602
 
 	report: Report = json.loads((Path.cwd() / "report.json").read_text())
 	return report
