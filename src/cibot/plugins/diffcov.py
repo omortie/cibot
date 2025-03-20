@@ -167,9 +167,8 @@ class Report(TypedDict):
 
 
 def create_report_for_cov_file(cov_file: Path, compare_branch: str) -> Report:
-	cmd = f"diff-cover coverage.xml --compare-branch={compare_branch} --json-report report.json"
-	if subprocess.run(cmd, shell=True, check=False).returncode != 0:
-		raise ValueError("Failed to generate coverage report")
+	cmd = f"diff-cover {cov_file!s} --compare-branch={compare_branch} --json-report report.json"
+	subprocess.run(cmd, shell=True, check=True)  # noqa: S602
 
 	report: Report = json.loads((Path.cwd() / "report.json").read_text())
 	return report
