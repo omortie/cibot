@@ -47,9 +47,10 @@ class GithubIssueStorage(BaseStorage):
 
 	def get[T](self, key: str, type_: type[T]) -> T | None:
 		logger.info(f"Getting key {key}")
-		if bucket := self.get_json_part_from_comment():
-			if exists := bucket.plugin_srorage.get(key, None):
-				return msgspec.json.decode(exists, type=type_)
+		if (bucket := self.get_json_part_from_comment()) and (
+			exists := bucket.plugin_srorage.get(key, None)
+		):
+			return msgspec.json.decode(exists, type=type_)
 		return None
 
 	def set(self, key: str, value: msgspec.Struct) -> None:

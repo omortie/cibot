@@ -24,7 +24,8 @@ class CiBotPlugin(ABC):
 		self._pr_comment: str | None = None
 		self._should_fail_work_flow = False
 		if "*" not in self.supported_backends() and backend.name() not in self.supported_backends():
-			raise ValueError(f"Backend {backend.name()} is not supported by this plugin")
+			msg = f"Backend {backend.name()} is not supported by this plugin"
+			raise ValueError(msg)
 
 	def on_pr_changed(self, pr: int) -> BumpType | None:
 		return None
@@ -55,13 +56,12 @@ class CiBotPlugin(ABC):
 		return None
 
 	def should_fail_workflow(self) -> bool:
-		"""
-		Return True if the workflow should fail, False otherwise.
-		"""
+		"""Return True if the workflow should fail, False otherwise."""
 		return self._should_fail_work_flow
 
 
 class VersionBumpPlugin(CiBotPlugin):
 	@abstractmethod
 	def next_version(self, bump_type: BumpType) -> str:
-		raise NotImplementedError("Subclasses must implement this method")
+		msg = "Subclasses must implement this method"
+		raise NotImplementedError(msg)

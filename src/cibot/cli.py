@@ -144,7 +144,6 @@ class PluginRunner:
 			self.storage.set(release_marker.as_key(), release_marker)
 		self.comment_on_pr(pr)
 		self.check_for_errors()
-		
 
 	def on_commit_to_main(self):
 		release_infos = [
