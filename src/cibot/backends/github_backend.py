@@ -52,12 +52,14 @@ class GithubBackend(CiBotBackendBase):
 	@override
 	def upsert_pr_comment(self, content: str, comment_id: str) -> None:
 		pr = self._pr
+		content += f"\n<!--CIBOT-COMMENT-ID {comment_id} -->"
 
 		for comment in pr.get_issue_comments().reversed:
 			if comment_id in comment.body:
+				if comment.body == content:
+					return
 				comment.delete()
 				break
-		content += f"\n<!--CIBOT-COMMENT-ID {comment_id} -->"
 		# If no comment was found, create a new one
 		pr.create_issue_comment(content)
 
