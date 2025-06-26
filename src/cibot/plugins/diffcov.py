@@ -62,10 +62,8 @@ class DiffCovPlugin(CiBotPlugin):
 	@override
 	def on_pr_changed(self, pr: int) -> BumpType | None:
 		settings = self.settings
-		cov_files = []
 		cov_files = list(Path.cwd().rglob("coverage.xml"))
 		cov_files.extend(list(Path.cwd().rglob("lcov.info")))
-
 
 		if not cov_files:
 			logger.error("No coverage files found")
@@ -76,22 +74,19 @@ class DiffCovPlugin(CiBotPlugin):
 			return None
 
 		grouped_lines_per_file: dict[str, list[tuple[int, int | None]]] = {}
-		fail_under_lints: dict[str, str] = {}
-		for cov_file in cov_files:
-			section_name = cov_file.parent.name
-			report = create_report_for_cov_file(cov_file, settings.COMPARE_BRANCH)
-			logger.info(f"Processing coverage report for {section_name}\n report is {report}")
-			for file, stats in report["src_stats"].items():
-				grouped_lines_per_file[file] = self._group_violations(stats["violation_lines"])
-				logger.info(f"Grouped lines for {file}: {grouped_lines_per_file[file]}")
-			# check fail under
-			if report["total_percent_covered"] < settings.FAIL_UNDER:
-				logger.error(f"Coverage failed under {settings.FAIL_UNDER}%")
-				self._pr_comment = (
-					f"{self._pr_comment or ''}\n#### 🔴 Coverage failed for {section_name}\n"  # noqa: ISC003
-					+ f"expected {settings.FAIL_UNDER}% got {report['total_percent_covered']}"
-				)
-				self._should_fail_work_flow = True
+		report = create_report_for_cov_files(cov_files, settings.COMPARE_BRANCH)
+		logger.info(f"Processing combined coverage report\n report is {report}")
+		for file, stats in report["src_stats"].items():
+			grouped_lines_per_file[file] = self._group_violations(stats["violation_lines"])
+			logger.info(f"Grouped lines for {file}: {grouped_lines_per_file[file]}")
+		# check fail under
+		if report["total_percent_covered"] < settings.FAIL_UNDER:
+			logger.error(f"Coverage failed under {settings.FAIL_UNDER}%")
+			self._pr_comment = (
+				f"{self._pr_comment or ''}\n#### 🔴 Coverage failed\n"  # noqa: ISC003
+				+ f"expected {settings.FAIL_UNDER}% got {report['total_percent_covered']}"
+			)
+			self._should_fail_work_flow = True
 
 		valid_comments: list[tuple[PrReviewComment, tuple[int, int | None]]] = []
 		for id_, comment in self.backend.get_review_comments_for_content_id(
@@ -162,8 +157,10 @@ class Report(TypedDict):
 	num_changed_lines: int
 
 
-def create_report_for_cov_file(cov_file: Path, compare_branch: str) -> Report:
-	cmd = f"diff-cover {cov_file!s} --compare-branch={compare_branch} --json-report report.json"
+
+def create_report_for_cov_files(cov_files: list[Path], compare_branch: str) -> Report:
+	cov_args = " ".join(str(f) for f in cov_files)
+	cmd = f"diff-cover {cov_args} --compare-branch={compare_branch} --json-report report.json"
 	subprocess.run(cmd, shell=True, check=True)  # noqa: S602
 
 	report: Report = json.loads((Path.cwd() / "report.json").read_text())
