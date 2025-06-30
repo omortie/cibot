@@ -161,6 +161,7 @@ class Report(TypedDict):
 def create_report_for_cov_files(cov_files: list[Path], compare_branch: str) -> Report:
 	cov_args = " ".join(str(f) for f in cov_files)
 	cmd = f"diff-cover {cov_args} --compare-branch={compare_branch} --json-report report.json"
+	logger.info(f"Running command: {cmd}")
 	subprocess.run(cmd, shell=True, check=True)  # noqa: S602
 
 	report: Report = json.loads((Path.cwd() / "report.json").read_text())
