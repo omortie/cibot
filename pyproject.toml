@@ -32,7 +32,7 @@ typeCheckingMode = "standard"
 
 
 [dependency-groups]
-dev = ["ruff>=0.9.10"]
+dev = ["ruff>=0.12.2"]
 
 
 [tool.ruff]
